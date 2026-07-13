@@ -1,0 +1,12 @@
+appId: com.aibeavers.beaverbuddy
+productName: Beaver Buddy
+directories:
+  output: release
+files:
+  - dist/**/*
+  - assets/**/*
+  - package.json
+mac:
+  category: public.app-category.utilities
+  minimumSystemVersion: '14.0'
+  target: dmg
