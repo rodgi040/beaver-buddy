@@ -8,7 +8,7 @@
 import { buildPaletteTable, TRANSPARENT } from './palette.ts';
 import { drawText, textWidth, GLYPH_H } from './font.ts';
 import type { IndexedImage } from './png.ts';
-import type { Frame } from './pixel-maps/baby.ts';
+import type { Frame } from './sheet.ts';
 
 const CHECKER_SIZE = 4;
 const ROW_PAD = 4;

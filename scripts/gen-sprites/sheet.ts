@@ -6,7 +6,13 @@
 
 import { buildPaletteTable, TRANSPARENT, type PaletteTable } from './palette.ts';
 import type { IndexedImage } from './png.ts';
-import type { Frame } from './pixel-maps/baby.ts';
+
+/** One tile: `tile` strings of length `tile`, one palette char (or '.') per pixel. */
+export type Frame = readonly string[];
+
+/** Fixed sheet row order for all beaver stages (binding, pinned in assets/STYLE.md). */
+export const BEAVER_ANIMATION_ORDER = ['idle', 'walk', 'run', 'sleep', 'react'] as const;
+export type BeaverAnimation = (typeof BEAVER_ANIMATION_ORDER)[number];
 
 export interface SheetMeta {
   readonly tile: number;
@@ -14,6 +20,8 @@ export interface SheetMeta {
   readonly sheetWidth: number;
   readonly sheetHeight: number;
   readonly rows: readonly { readonly name: string; readonly frames: number }[];
+  /** Free-form encoding notes (e.g. how particle tiles are laid out). */
+  readonly note?: string;
 }
 
 export function validateFrame(frame: Frame, tile: number, table: PaletteTable, context: string): void {
@@ -37,6 +45,7 @@ export function buildSheet(
   animationOrder: readonly string[],
   tile: number,
   fps: number,
+  note?: string,
 ): { image: IndexedImage; meta: SheetMeta } {
   const table = buildPaletteTable();
   const maxFrames = Math.max(...animationOrder.map((name) => animations[name].length));
@@ -66,6 +75,7 @@ export function buildSheet(
     sheetWidth: width,
     sheetHeight: height,
     rows: animationOrder.map((name) => ({ name, frames: animations[name].length })),
+    ...(note === undefined ? {} : { note }),
   };
 
   return {

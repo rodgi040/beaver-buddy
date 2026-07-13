@@ -1,30 +1,20 @@
 // Baby-beaver pixel maps: one 32x32 string grid per frame, one char per
-// pixel (palette.ts key, or '.' for transparent). Right-facing only — the
-// renderer mirrors for left-facing (assets/STYLE.md, once written).
+// pixel (palette.ts key, '.' = transparent). Right-facing only — the
+// renderer mirrors for left-facing (assets/STYLE.md). Shared conventions
+// across all stages: one round mass with a smooth convex back line, single
+// round ear bump, blunt muzzle with a 2x2 off-white buck-teeth block
+// directly beneath it, flat dark-slate paddle tail with lighter scute
+// lines, 2px eye (slate pupil + cyan shine), stubby feet with no legs,
+// teal-gray belly, 3-tone fur shading, auto-derived 1px outline (every
+// silhouette pixel touching transparency), no anti-aliasing.
 //
-// Design (per design gate #1): chibi side profile, one round chunky mass
-// (~16px wide x 14px tall, smooth convex back line) sitting low on two
-// stubby feet — no legs. Signature features: a flat horizontal paddle tail
-// (dark slate, ~10x4, low near the ground, lighter scute-texture lines so
-// it reads flat), a 2x2 off-white buck-teeth block directly under the
-// blunt muzzle, one small round ear bump, a 2px eye (slate pupil + cyan
-// shine) high on the head, teal-gray belly patch, fur highlight along the
-// top and a darker fleck on the tail side. Every silhouette pixel earns
-// its 1px outline by touching a transparent neighbor — the shapes were
-// composed so the outline falls out of the silhouette, there is no
-// hand-drawn outline pass.
-//
-// Motion: idle = 1px breathing bob (tail stays grounded, feet stretch to
-// stay attached); walk = feet shuffle +-1..2px with body bob + one foot
-// lifted on passing frames; run = the same cycle with 1px forward lean,
-// wider stride, and the paddle tail flapping up 2px on alternate frames;
-// sleep = body flattened ~30% into a round blob, tail alongside on the
-// ground, closed-line eye, 1px belly breath; react = both stubby arms
-// raised up-out plus a jump arc (0/-2/-3/-1) with a tail flick at the peak.
-//
-// Frame order per animation matches ANIMATION_ORDER below.
-
-export type Frame = readonly string[];
+// Baby: chibi, ~16px visual height (body ~16x14 + feet). Motion: idle =
+// 1px breathing bob (tail grounded); walk = feet shuffle +-1..2px, lifted
+// foot on passing frames; run = 1px lean, wider stride, tail flaps up 2px
+// on alternate frames; sleep = blob flattened ~30%, tail alongside, closed
+// eye; react = tapered stub arms raised up-out from the shoulders + jump
+// arc 0/-2/-3/-1 with a tail flick at the peak.
+import type { BeaverAnimation, Frame } from '../sheet.ts';
 
 const idle1: Frame = [
   '................................',
@@ -454,15 +444,15 @@ const react1: Frame = [
   '................................',
   '................................',
   '................................',
-  '................................',
-  '................................',
-  '.....................kkkk.......',
-  '.....................k22k.......',
-  '.........kkk.........k22k.......',
-  '.........k2k.......kkkkkk.......',
-  '........kk2kk..kkkkk2k..........',
-  '.........k2k.kkk33333kk.........',
-  '.........kkkkk33222292kkk.......',
+  '.......................kk.......',
+  '......................kkk.......',
+  '......................kkk.......',
+  '........kk...........kkk........',
+  '........kkk..........k2k........',
+  '........kkkk.......kkk2k........',
+  '.........kkkkk.kkkkk222k........',
+  '..........k22kkk3333322k........',
+  '..........kk22332222922kk.......',
   '...........k22222222k222k.......',
   '..........kk222222222222kkk.....',
   '..........k222222222222223kk....',
@@ -487,15 +477,15 @@ const react2: Frame = [
   '................................',
   '................................',
   '................................',
-  '................................',
-  '................................',
-  '.....................kkkk.......',
-  '.....................k22k.......',
-  '.........kkk.........k22k.......',
-  '.........k2k.......kkkkkk.......',
-  '........kk2kk..kkkkk2k..........',
-  '.........k2k.kkk33333kk.........',
-  '.........kkkkk33222292kkk.......',
+  '.......................kk.......',
+  '......................kkk.......',
+  '......................kkk.......',
+  '........kk...........kkk........',
+  '........kkk..........k2k........',
+  '........kkkk.......kkk2k........',
+  '.........kkkkk.kkkkk222k........',
+  '..........k22kkk3333322k........',
+  '..........kk22332222922kk.......',
   '...........k22222222k222k.......',
   '..........kk222222222222kkk.....',
   '..........k222222222222223kk....',
@@ -521,15 +511,15 @@ const react3: Frame = [
   '................................',
   '................................',
   '................................',
-  '................................',
-  '................................',
-  '.....................kkkk.......',
-  '.....................k22k.......',
-  '.........kkk.........k22k.......',
-  '.........k2k.......kkkkkk.......',
-  '........kk2kk..kkkkk2k..........',
-  '.........k2k.kkk33333kk.........',
-  '.........kkkkk33222292kkk.......',
+  '.......................kk.......',
+  '......................kkk.......',
+  '......................kkk.......',
+  '........kk...........kkk........',
+  '........kkk..........k2k........',
+  '........kkkk.......kkk2k........',
+  '.........kkkkk.kkkkk222k........',
+  '..........k22kkk3333322k........',
+  '..........kk22332222922kk.......',
   '...........k22222222k222k.......',
   '..........kk222222222222kkk.....',
   '..........k222222222222223kk....',
@@ -558,15 +548,15 @@ const react4: Frame = [
   '................................',
   '................................',
   '................................',
-  '................................',
-  '................................',
-  '.....................kkkk.......',
-  '.....................k22k.......',
-  '.........kkk.........k22k.......',
-  '.........k2k.......kkkkkk.......',
-  '........kk2kk..kkkkk2k..........',
-  '.........k2k.kkk33333kk.........',
-  '.........kkkkk33222292kkk.......',
+  '.......................kk.......',
+  '......................kkk.......',
+  '......................kkk.......',
+  '........kk...........kkk........',
+  '........kkk..........k2k........',
+  '........kkkk.......kkk2k........',
+  '.........kkkkk.kkkkk222k........',
+  '..........k22kkk3333322k........',
+  '..........kk22332222922kk.......',
   '...........k22222222k222k.......',
   '..........kk222222222222kkk.....',
   '..........k222222222222223kk....',
@@ -586,10 +576,7 @@ const react4: Frame = [
   '................................',
 ];
 
-/** Fixed sheet row order (binding, matches assets/STYLE.md once written). */
-export const ANIMATION_ORDER = ['idle', 'walk', 'run', 'sleep', 'react'] as const;
-
-export const ANIMATIONS: Record<(typeof ANIMATION_ORDER)[number], readonly Frame[]> = {
+export const ANIMATIONS: Record<BeaverAnimation, readonly Frame[]> = {
   idle: [idle1, idle2],
   walk: [walk1, walk2, walk3, walk4],
   run: [run1, run2, run3, run4],
