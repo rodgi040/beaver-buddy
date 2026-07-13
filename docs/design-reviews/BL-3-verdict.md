@@ -5,6 +5,8 @@ Review method: 8× nearest-neighbor contact sheets on a checkerboard
 `npm run assets:build`), reviewed visually by the orchestrating model per
 PRD R10. Reviewed 2026-07-14.
 
+Final result: all four sheets APPROVED.
+
 ## Gate history
 
 ### Baby (`beaver-baby.png`) — FAIL → redesign → PASS
@@ -17,7 +19,7 @@ PRD R10. Reviewed 2026-07-14.
   (were floating blocks). All non-react frames byte-identical to the
   approved art.
 
-### Teen (`beaver-teen.png`) — FAIL → fix → pending re-review
+### Teen (`beaver-teen.png`) — FAIL → fix → PASS (round 2)
 - Gate #2 FAIL: read as a rectangular loaf (no head separation), muzzle
   read as an open duck bill (highlight-tone flap + mouth-gap column),
   react arms sat on the head like horns, muscle taper barely visible.
@@ -25,13 +27,17 @@ PRD R10. Reviewed 2026-07-14.
   muzzle side; baby-style mid-tone muzzle with teeth sharing the outline
   (jaw fill closes the mouth notch); chest/shoulders a real 2px-per-side V
   over the hips; react arms root at shoulder height on the body sides.
+- Gate #2 re-review: PASS.
 
-### Adult (`beaver-adult.png`) — FAIL → fix → pending re-review
+### Adult (`beaver-adult.png`) — FAIL → fix → PASS (round 2)
 - Gate #2 FAIL: same loaf/bill/arm issues as teen, plus a
   disproportionately small tail next to the barrel body.
 - Fix: separate head dome over the 19px barrel chest, baby-style face,
   shoulder-rooted arms, tail widened/lengthened to 15×5 with two texture
   rows.
+- Gate #2 re-review: PASS. Recorded nit, no change made: the teeth patch
+  reads slightly oversized at 8× but is acceptable at 1× — possible future
+  micro-tweak only.
 
 ### Lodge + sparks (`lodge.png`) — PASS
 - Gate #2 PASS with minor note: add contrast stick strokes so the dome
