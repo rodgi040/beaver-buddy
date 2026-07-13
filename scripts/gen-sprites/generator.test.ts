@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { encodeIndexedPng } from './png.ts';
 import { buildSheet, BEAVER_ANIMATION_ORDER, type Frame } from './sheet.ts';
@@ -11,6 +12,8 @@ const FPS = 10;
 
 interface SheetCase {
   readonly name: string;
+  /** Committed sheet basename under assets/sprites/. */
+  readonly file: string;
   readonly animations: Readonly<Record<string, readonly Frame[]>>;
   readonly order: readonly string[];
   readonly tile: number;
@@ -19,18 +22,27 @@ interface SheetCase {
 }
 
 const CASES: readonly SheetCase[] = [
-  { name: 'baby', animations: BABY, order: BEAVER_ANIMATION_ORDER, tile: 32, tailGuard: true },
-  { name: 'teen', animations: TEEN, order: BEAVER_ANIMATION_ORDER, tile: 32, tailGuard: true },
-  { name: 'adult', animations: ADULT, order: BEAVER_ANIMATION_ORDER, tile: 32, tailGuard: true },
-  { name: 'lodge', animations: LODGE_ANIMATIONS, order: LODGE_ANIMATION_ORDER, tile: 48, tailGuard: false },
+  { name: 'baby', file: 'beaver-baby', animations: BABY, order: BEAVER_ANIMATION_ORDER, tile: 32, tailGuard: true },
+  { name: 'teen', file: 'beaver-teen', animations: TEEN, order: BEAVER_ANIMATION_ORDER, tile: 32, tailGuard: true },
+  { name: 'adult', file: 'beaver-adult', animations: ADULT, order: BEAVER_ANIMATION_ORDER, tile: 32, tailGuard: true },
+  { name: 'lodge', file: 'lodge', animations: LODGE_ANIMATIONS, order: LODGE_ANIMATION_ORDER, tile: 48, tailGuard: false },
 ];
 
-describe.each(CASES)('sprite generator: $name', ({ name, animations, order, tile, tailGuard }) => {
+describe.each(CASES)('sprite generator: $name', ({ name, file, animations, order, tile, tailGuard }) => {
   it('is deterministic: two runs produce byte-identical PNGs', () => {
     const a = buildSheet(animations, order, tile, FPS);
     const b = buildSheet(animations, order, tile, FPS);
     expect(encodeIndexedPng(a.image).equals(encodeIndexedPng(b.image))).toBe(true);
     expect(a.meta).toEqual(b.meta);
+  });
+
+  // Guards against stale or hand-edited committed assets: the in-process
+  // determinism test above can't catch a sheet on disk that no longer
+  // matches the pixel maps. Fails => run `npm run assets:build` and commit.
+  it('committed PNG matches the generator output byte-for-byte', () => {
+    const committed = fs.readFileSync(new URL(`../../assets/sprites/${file}.png`, import.meta.url));
+    const { image } = buildSheet(animations, order, tile, FPS);
+    expect(committed.equals(encodeIndexedPng(image))).toBe(true);
   });
 
   it('every pixel is either the transparent index or a valid palette index', () => {
