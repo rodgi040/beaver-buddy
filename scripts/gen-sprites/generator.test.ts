@@ -35,6 +35,39 @@ describe('sprite generator', () => {
     });
   });
 
+  // The flat paddle tail is the beaver's signature silhouette — it must
+  // never degrade into a ball or vanish in any frame: a horizontal run of
+  // >=8 filled pixels starting at x<=6, and the far-tail zone (x<=7) no
+  // taller than 5 rows.
+  it('every frame keeps the flat tail-paddle silhouette', () => {
+    for (const [name, frames] of Object.entries(ANIMATIONS)) {
+      frames.forEach((frame, i) => {
+        let hasRun = false;
+        for (const row of frame) {
+          let run = 0;
+          let start = -1;
+          for (let x = 0; x < row.length; x += 1) {
+            if (row[x] !== '.') {
+              if (run === 0) start = x;
+              run += 1;
+              if (run >= 8 && start <= 6) hasRun = true;
+            } else {
+              run = 0;
+            }
+          }
+        }
+        expect(hasRun, `${name}[${i}] lost the tail paddle`).toBe(true);
+
+        const tailRows = frame
+          .map((row, y) => ({ y, filled: [...row.slice(0, 8)].some((ch) => ch !== '.') }))
+          .filter((r) => r.filled)
+          .map((r) => r.y);
+        const span = Math.max(...tailRows) - Math.min(...tailRows) + 1;
+        expect(span, `${name}[${i}] tail zone too tall (${span} rows)`).toBeLessThanOrEqual(5);
+      });
+    }
+  });
+
   it('rejects a frame with an off-palette character', () => {
     const bad = {
       ...ANIMATIONS,
