@@ -4,9 +4,8 @@ import { buildMenuTemplate, formatPetLabel, type TrayCallbacks } from './tray';
 // tray.ts imports 'electron' at module scope, but under plain Node (as
 // vitest runs) that resolves to a path string, not the real API — so
 // merely importing the module and building menu *data* (never calling
-// Tray/Menu/app APIs) is safe without a running Electron process. This is
-// the "menu template unit check" the plan calls for; the visual tray itself
-// is verified live (see docs/design-reviews).
+// Tray/Menu/app APIs) is safe without a running Electron process. The
+// visual tray itself is verified live (see docs/design-reviews).
 
 describe('formatPetLabel', () => {
   it('formats level, stage, and progress toward the next level', () => {

@@ -1,12 +1,12 @@
-// THE one constants file for the level curve (R8 acceptance) — no other
-// file holds curve numbers. Level cost is linear (XP_PER_LEVEL per level);
+// THE one constants file for the level curve — no other file holds curve
+// numbers. Level cost is linear (XP_PER_LEVEL per level);
 // stage boundaries are separate anchors on top of that curve so tuning one
 // never silently moves the other.
 
 export type Stage = 'baby' | 'teen' | 'adult';
 
-// Tokens consumed per 1 XP earned — the only conversion from BL-5's raw
-// lifetime token total into this module's XP currency.
+// Tokens consumed per 1 XP earned — the only conversion from the usage
+// tracker's raw lifetime token total into this module's XP currency.
 export const TOKENS_PER_XP = 100;
 
 // XP cost per level, flat across the whole curve.
