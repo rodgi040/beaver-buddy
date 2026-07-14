@@ -5,6 +5,7 @@
     "module": "commonjs",
     "moduleResolution": "node10",
     "ignoreDeprecations": "6.0",
+    "rewriteRelativeImportExtensions": true,
     "rootDir": "src",
     "outDir": "dist",
     "strict": true,
