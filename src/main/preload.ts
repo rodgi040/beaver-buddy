@@ -13,11 +13,16 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 const PAUSE_CHANGED_CHANNEL = 'state:paused'; // must match src/main/ipc-channels.ts
 const PET_CHANGED_CHANNEL = 'state:pet'; // must match src/main/ipc-channels.ts
+const HATCH_START_CHANNEL = 'state:hatch'; // must match src/main/ipc-channels.ts
 
 interface PetChangedPayload {
   level: number;
   stage: 'baby' | 'teen' | 'adult';
   evolvingTo?: 'baby' | 'teen' | 'adult';
+}
+
+interface HatchStartPayload {
+  corner: 'bottom-left';
 }
 
 contextBridge.exposeInMainWorld('beaverBuddy', {
@@ -29,6 +34,12 @@ contextBridge.exposeInMainWorld('beaverBuddy', {
   onPetChanged: (callback: (pet: PetChangedPayload) => void): void => {
     ipcRenderer.on(PET_CHANGED_CHANNEL, (_event, pet: PetChangedPayload) => {
       callback(pet);
+    });
+  },
+  // One-way main -> renderer only; nothing renderer -> main is exposed here.
+  onHatchStart: (callback: (payload: HatchStartPayload) => void): void => {
+    ipcRenderer.on(HATCH_START_CHANNEL, (_event, payload: HatchStartPayload) => {
+      callback(payload);
     });
   },
 });
