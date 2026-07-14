@@ -315,9 +315,11 @@ function draw(): void {
       x: layout.x,
       y: layout.y,
       width: layout.width,
-      // + tail: the bubble's own height stops at its bottom edge, but the
-      // tail triangle draws BUBBLE_TAIL_SIZE_PX further down.
-      height: layout.height + BUBBLE_TAIL_SIZE_PX,
+      // + tail + 1: the tail triangle draws BUBBLE_TAIL_SIZE_PX below the
+      // bubble's bottom edge, and its 1px outline stroke (drawn on the +0.5
+      // pixel center) bleeds one more pixel past the fill — without the +1
+      // the clear pass leaves a stroke-residue line behind.
+      height: layout.height + BUBBLE_TAIL_SIZE_PX + 1,
     });
   }
   dirtyRect = unionedRect;
