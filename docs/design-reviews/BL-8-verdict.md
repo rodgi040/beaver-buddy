@@ -156,11 +156,49 @@ showing (crop origin (883, 1857), size 290×175 pre-scale). Shows the bubble
 correctly repositioned above the pet at its new (walking) location, facing
 the opposite direction from evidence 1's capture.
 
+## Evidence 3 — launch-time evolution quip (review fix, verified live)
+
+Review found that a quip fired before did-finish-load (e.g. the evolution
+trigger from launch-time XP accrual) was dropped by `webContents.send` yet
+still burned the scheduler cooldown — which then suppressed the appStart
+quip too: a silent zero-quip launch. Fixed by making `fireQuip` a full
+no-op until the page has loaded and replaying the launch-time evolution
+inside the did-finish-load handler from the engine's `getLastUpdate()` —
+the same resend pattern already used for PET_CHANGED. Live evolutions
+after load still flow through `xpEngine.onUpdate`; no double-fire is
+possible because the pre-load emission never reaches the scheduler and the
+replay reads `getLastUpdate()` exactly once, synchronously, inside the
+same handler that flips the gate.
+
+Verified live: fresh temp userData, `onboarding-state.json` pre-seeded
+`{"hatched":true}`, launched with `--inject-xp=1500` (crosses level 16,
+baby → teen, before the page loads — the evolving update is emitted during
+launch-time accrual, exactly the broken scenario). `__debugQuip` +
+`__debugPet` polled every 200ms for 8s:
+
+| t (ms) | `__debugQuip` | `__debugPet` |
+|---|---|---|
+| 213 | `"Behold: teen form. Slightly bigger, still smug."` | level 16, stage baby, evolving: true |
+| 213–5920 | same text, unchanged (29 consecutive samples) | evolution animation in flight |
+| 6124 | `null` | — |
+
+Findings:
+- The evolution quip **appeared** after load (previously it would have
+  been silently dropped), with `{stage}` correctly filled with `teen`.
+- It was the **only** quip text seen in the whole window — no
+  appStart-pool line ever showed. appStart being suppressed by the
+  cooldown the evolution quip burned is the expected one-quip-per-window
+  behavior (one quip on screen, never zero and never two).
+- Quip cleared between 5920 and 6124ms — the 6000ms display duration,
+  within the 200ms poll granularity.
+- Covered at the unit level by the new scheduler test "launch sequence
+  (evolution then appStart in the same tick)".
+
 ## Gates
 
 `npm ci` clean, `npm run typecheck` clean (main + renderer + gen-sprites
 tsconfigs), `npm run lint` clean (eslint, 0 errors/warnings), `npm test`
-**201 passed / 1 skipped** (22 files — 5 new: `quips/scheduler.test.ts`,
+**202 passed / 1 skipped** (22 files — 5 new: `quips/scheduler.test.ts`,
 `quips/detectors.test.ts`, `quips/quips.test.ts`, `renderer/bubble.test.ts`,
 plus the extended `usage/tracker.test.ts` and `ipc-channels.test.ts` drift
 guard, all still passing), `npm run build` clean.
