@@ -1,23 +1,60 @@
 import path from 'node:path';
 import { app, BrowserWindow, powerMonitor, screen } from 'electron';
 import { applySessionHardening, applyWindowHardening } from './hardening';
-import { HATCH_START_CHANNEL, PAUSE_CHANGED_CHANNEL, PET_CHANGED_CHANNEL } from './ipc-channels';
+import { HATCH_START_CHANNEL, PAUSE_CHANGED_CHANNEL, PET_CHANGED_CHANNEL, QUIP_CHANGED_CHANNEL } from './ipc-channels';
 import { loadOnboardingState, saveOnboardingState } from './onboarding';
 import { createPauseState, isPaused, setSystemPause, toggleManualPause, type PauseState } from './pause-state';
 import { createTray, formatPetLabel } from './tray';
 import { XpEngine, type PetUpdate } from './xp/engine';
 import { UsageTracker } from './usage/tracker';
+import { createDetectorState, detectEvents } from './quips/detectors';
+import { QUIP_DISPLAY_DURATION_MS } from './quips/quip-config';
+import { QUIP_POOLS, type QuipTrigger } from './quips/quips';
+import { createSchedulerState, schedule, type SchedulerState } from './quips/scheduler';
+import type { Stage } from './xp/curve';
 
 const SMOKE_DELAY_MS = 3000;
 const INJECT_XP_FLAG_PREFIX = '--inject-xp=';
+const QUIP_FLAG = '--quip';
+const QUIP_TRIGGERS = Object.keys(QUIP_POOLS) as readonly QuipTrigger[];
 
 let pauseState: PauseState = createPauseState();
 let mainWindow: BrowserWindow | null = null;
 // Electron has no getter for ignoreMouseEvents, so we track what we set.
 let ignoresMouseEvents = false;
+let quipSchedulerState: SchedulerState = createSchedulerState();
 
 function broadcastPaused(): void {
   mainWindow?.webContents.send(PAUSE_CHANGED_CHANNEL, isPaused(pauseState));
+}
+
+// Runs every trigger through the real scheduler (cooldown + no-immediate-
+// repeat); only sends IPC when the scheduler actually picks a quip.
+function fireQuip(trigger: QuipTrigger, evolvedStage?: Stage): void {
+  const result = schedule(quipSchedulerState, trigger, Date.now(), Math.random, evolvedStage);
+  quipSchedulerState = result.state;
+  if (result.text) {
+    mainWindow?.webContents.send(QUIP_CHANGED_CHANNEL, { text: result.text, durationMs: QUIP_DISPLAY_DURATION_MS });
+  }
+}
+
+function isQuipTrigger(value: string | undefined): value is QuipTrigger {
+  return QUIP_TRIGGERS.includes(value as QuipTrigger);
+}
+
+// Dev acceptance flag: --quip <trigger> [--quip <trigger> ...] fires each
+// named trigger through the real scheduler after window load — the
+// scriptable acceptance mechanism, mirroring --inject-xp. Multiple
+// occurrences let a single launch demonstrate the cooldown suppressing a
+// second trigger fired immediately after the first.
+function parseQuipFlags(argv: readonly string[]): QuipTrigger[] {
+  const triggers: QuipTrigger[] = [];
+  argv.forEach((arg, i) => {
+    if (arg === QUIP_FLAG && isQuipTrigger(argv[i + 1])) {
+      triggers.push(argv[i + 1] as QuipTrigger);
+    }
+  });
+  return triggers;
 }
 
 // Dev acceptance flag: --inject-xp=N adds N XP once at launch, through
@@ -124,6 +161,9 @@ app.whenReady().then(() => {
   xpEngine.onUpdate((update: PetUpdate) => {
     tray.refresh();
     mainWindow?.webContents.send(PET_CHANGED_CHANNEL, update);
+    if (update.evolvingTo) {
+      fireQuip('evolution', update.evolvingTo);
+    }
   });
 
   const injectXpAmount = parseInjectXp(process.argv);
@@ -134,6 +174,16 @@ app.whenReady().then(() => {
   const usageTracker = new UsageTracker();
   usageTracker.start();
   xpEngine.attachTracker(usageTracker);
+
+  // codingSession/tokenSpike/idle detection rides the tracker's own refresh
+  // cadence via onTick (fires whether usage changed or not — idle detection
+  // needs the zero-delta ticks too) rather than a second polling loop.
+  let detectorState = createDetectorState();
+  usageTracker.onTick((totals) => {
+    const result = detectEvents(detectorState, { nowMs: Date.now(), lifetimeTokens: totals.lifetime.totalTokens });
+    detectorState = result.state;
+    for (const event of result.events) fireQuip(event);
+  });
 
   // webContents.send before the renderer has finished loading (and
   // attached its onPetChanged listener) is silently dropped, so the latest
@@ -147,6 +197,20 @@ app.whenReady().then(() => {
       mainWindow?.webContents.send(HATCH_START_CHANNEL);
     }
     mainWindow?.webContents.send(PET_CHANGED_CHANNEL, xpEngine.getLastUpdate());
+
+    // Scripted --quip triggers run first so a QA launch can control exactly
+    // what fires (and, with two flags, demonstrate cooldown suppression)
+    // without racing the automatic appStart trigger below.
+    for (const trigger of parseQuipFlags(process.argv)) {
+      fireQuip(trigger, trigger === 'evolution' ? xpEngine.getState().stage : undefined);
+    }
+
+    // appStart is suppressed on the hatch launch (hatch owns the first
+    // impression) and, incidentally, by the cooldown if a --quip flag above
+    // already fired one this launch — same mechanism, no special-casing.
+    if (!shouldHatch) {
+      fireQuip('appStart');
+    }
   });
 
   powerMonitor.on('suspend', () => {
