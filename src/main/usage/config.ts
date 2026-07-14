@@ -9,3 +9,7 @@ export const MAX_LINE_BYTES = 1_000_000;
 
 // How often the tracker re-scans usage-log files for changes.
 export const USAGE_REFRESH_MS = 60_000;
+
+// How many leading bytes of a Codex rollout file are sniffed for the
+// forked/spawned-thread markers that indicate a replayed history prefix.
+export const CODEX_REPLAY_SNIFF_BYTES = 16_384;

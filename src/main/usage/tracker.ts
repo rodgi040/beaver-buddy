@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import { discoverPaths, type PathEnv } from './paths.ts';
 import { parseClaudeFile } from './claude-parser.ts';
-import { parseCodexFile } from './codex-parser.ts';
+import { dedupeCodexEntries, parseCodexFile } from './codex-parser.ts';
 import { aggregate, type UsageEntry, type UsageTotals } from './totals.ts';
 import { USAGE_REFRESH_MS } from './config.ts';
 
@@ -61,10 +61,11 @@ export class UsageTracker {
   refresh(): void {
     const { claudeFiles, codexFiles } = discoverPaths(this.env, this.home);
     const liveFiles = new Set<string>();
-    const allEntries: UsageEntry[] = [];
+    const claudeEntries: UsageEntry[] = [];
+    const codexEntries: UsageEntry[] = [];
     let changed = false;
 
-    const processFile = (filePath: string, parse: (f: string) => UsageEntry[]): void => {
+    const processFile = (filePath: string, parse: (f: string) => UsageEntry[], sink: UsageEntry[]): void => {
       liveFiles.add(filePath);
 
       let mtimeMs: number;
@@ -81,11 +82,11 @@ export class UsageTracker {
         changed = true;
       }
 
-      allEntries.push(...(this.fileCache.get(filePath)?.entries ?? []));
+      sink.push(...(this.fileCache.get(filePath)?.entries ?? []));
     };
 
-    for (const filePath of claudeFiles) processFile(filePath, parseClaudeFile);
-    for (const filePath of codexFiles) processFile(filePath, parseCodexFile);
+    for (const filePath of claudeFiles) processFile(filePath, parseClaudeFile, claudeEntries);
+    for (const filePath of codexFiles) processFile(filePath, parseCodexFile, codexEntries);
 
     // Drop cache entries for files that no longer show up in discovery
     // (rotated/deleted logs) so they stop contributing to totals.
@@ -98,7 +99,9 @@ export class UsageTracker {
 
     if (!changed) return;
 
-    this.totals = aggregate(allEntries);
+    // Codex event dedup is cross-file, so it runs over the combined set here
+    // rather than inside the per-file parser.
+    this.totals = aggregate([...claudeEntries, ...dedupeCodexEntries(codexEntries)]);
     for (const listener of this.listeners) listener(this.totals);
   }
 }
