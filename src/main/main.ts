@@ -180,6 +180,24 @@ app.whenReady().then(() => {
   });
   mrrEngine.start();
 
+  // Named (not inline) so the QA-only --open-growth-settings flag below can
+  // invoke the exact same code path the tray's "Growth settings…" click
+  // does — a native tray menu item can't be clicked via CDP, so a
+  // scriptable flag is the only way to drive it, same family as --quip.
+  function openGrowthSettings(): void {
+    openSettingsWindow({
+      stateDir,
+      keychainService,
+      getSettings: () => growthSettings,
+      onSettingsChanged: (next) => {
+        growthSettings = next;
+        xpEngine.setMode(growthSettings.mode);
+        tray.refresh();
+        if (growthSettings.mode === 'mrr' && mrrPollNowOnModeSwitch) void mrrEngine.pollNow();
+      },
+    });
+  }
+
   const debugTrayMenu = process.argv.includes('--debug-tray-menu');
   const tray = createTray(
     {
@@ -198,22 +216,12 @@ app.whenReady().then(() => {
         xpEngine.setMode(growthSettings.mode);
         if (mode === 'mrr' && mrrPollNowOnModeSwitch) void mrrEngine.pollNow();
       },
-      onOpenGrowthSettings: () => {
-        openSettingsWindow({
-          stateDir,
-          keychainService,
-          getSettings: () => growthSettings,
-          onSettingsChanged: (next) => {
-            growthSettings = next;
-            xpEngine.setMode(growthSettings.mode);
-            tray.refresh();
-            if (growthSettings.mode === 'mrr' && mrrPollNowOnModeSwitch) void mrrEngine.pollNow();
-          },
-        });
-      },
+      onOpenGrowthSettings: openGrowthSettings,
     },
     debugTrayMenu ? (labels) => process.stdout.write(`TRAY_MENU: ${JSON.stringify(labels)}\n`) : undefined,
   );
+
+  if (process.argv.includes('--open-growth-settings')) openGrowthSettings();
 
   // Registered before any accrual (--inject-xp, tracker attach) so every
   // update — including a launch-time stage crossing — flows through here
