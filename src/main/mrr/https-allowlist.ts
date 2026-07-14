@@ -14,7 +14,10 @@ export interface FetchResponseLike {
   json(): Promise<unknown>;
 }
 
-export type FetchLike = (url: string, init?: { headers?: Record<string, string> }) => Promise<FetchResponseLike>;
+export type FetchLike = (
+  url: string,
+  init?: { headers?: Record<string, string>; redirect?: 'error' },
+) => Promise<FetchResponseLike>;
 
 const ALLOWED_HOSTS = new Set(['api.stripe.com', 'api.revenuecat.com']);
 
@@ -30,5 +33,9 @@ export async function allowlistedFetch(
   if (protocol !== 'https:' || !ALLOWED_HOSTS.has(hostname)) {
     throw new Error(`https-allowlist: refused host "${hostname}"`);
   }
-  return fetchImpl(url, init);
+  // redirect: 'error' — the hostname check above only covers the request
+  // URL; fetch's default 'follow' would silently chase a 3xx to a host that
+  // was never checked. These are JSON APIs; a redirect is never expected,
+  // so any 3xx is a hard failure rather than something to follow.
+  return fetchImpl(url, { ...init, redirect: 'error' });
 }

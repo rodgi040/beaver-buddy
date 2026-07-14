@@ -9,6 +9,11 @@ export const MRR_POLL_MS = 24 * 60 * 60 * 1000;
 // Flat daily award, not continuous accrual — see the plan's auto-decisions.
 export const MRR_XP_PER_DOLLAR = 10;
 
+// Sanity cap on summed daily MRR before it converts to XP: anything above
+// this is a corrupt/hostile API response, not revenue — clamp so one bad
+// poll can never mint unbounded XP.
+export const MRR_MAX_DOLLARS = 1_000_000;
+
 // Keychain service name used when no `--keychain-service` override is
 // passed (QA uses an override so it never touches real entries).
 export const DEFAULT_KEYCHAIN_SERVICE = 'beaver-buddy';

@@ -175,6 +175,74 @@ describe('MrrEngine.pollNow', () => {
     expect(xp.awarded).toHaveLength(1);
   });
 
+  it('clock rolled backwards past the last award date awards nothing (no re-award)', async () => {
+    getKeychainSecretMock.mockResolvedValue('sk_test_fake');
+    const fetchImpl = vi.fn().mockResolvedValue(stripeSubscriptionsResponse(10));
+    const xp = new FakeXp();
+    let now = new Date('2026-07-14T10:00:00');
+    const engine = new MrrEngine({
+      xpEngine: xp,
+      getMode: () => 'mrr',
+      getKeychainService: () => 'svc',
+      getConnected: () => ({ stripe: true, revenuecat: false }),
+      fetchImpl,
+      now: () => now,
+    });
+    await engine.pollNow(); // awards for 2026-07-14
+    now = new Date('2026-07-13T10:00:00'); // clock rollback
+    await engine.pollNow();
+    expect(xp.awarded).toEqual([{ xp: 100, date: '2026-07-14' }]);
+  });
+
+  it('negative MRR clamps to a 0-XP award (date still recorded, no same-day retry)', async () => {
+    getKeychainSecretMock.mockResolvedValue('rc_fake');
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({ metrics: [{ id: 'mrr', value: -50 }] }));
+    const xp = new FakeXp();
+    const engine = new MrrEngine({
+      xpEngine: xp,
+      getMode: () => 'mrr',
+      getKeychainService: () => 'svc',
+      getConnected: () => ({ stripe: false, revenuecat: true }),
+      fetchImpl,
+      now: () => new Date('2026-07-14T10:00:00'),
+    });
+    await engine.pollNow();
+    expect(xp.awarded).toEqual([{ xp: 0, date: '2026-07-14' }]);
+  });
+
+  it('NaN MRR is rejected by the client schema check -> no award at all', async () => {
+    getKeychainSecretMock.mockResolvedValue('rc_fake');
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({ metrics: [{ id: 'mrr', value: NaN }] }));
+    const xp = new FakeXp();
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const engine = new MrrEngine({
+      xpEngine: xp,
+      getMode: () => 'mrr',
+      getKeychainService: () => 'svc',
+      getConnected: () => ({ stripe: false, revenuecat: true }),
+      fetchImpl,
+    });
+    await engine.pollNow();
+    expect(xp.awarded).toHaveLength(0);
+    spy.mockRestore();
+  });
+
+  it('absurd MRR (1e15) is capped at MRR_MAX_DOLLARS before the award', async () => {
+    getKeychainSecretMock.mockResolvedValue('rc_fake');
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({ metrics: [{ id: 'mrr', value: 1e15 }] }));
+    const xp = new FakeXp();
+    const engine = new MrrEngine({
+      xpEngine: xp,
+      getMode: () => 'mrr',
+      getKeychainService: () => 'svc',
+      getConnected: () => ({ stripe: false, revenuecat: true }),
+      fetchImpl,
+      now: () => new Date('2026-07-14T10:00:00'),
+    });
+    await engine.pollNow();
+    expect(xp.awarded).toEqual([{ xp: 1_000_000 * 10, date: '2026-07-14' }]);
+  });
+
   it('sums stripe and revenuecat when both are connected', async () => {
     getKeychainSecretMock.mockImplementation(async (_service, account) => {
       if (account === 'stripe-key') return 'sk_test_fake';

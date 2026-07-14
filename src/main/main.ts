@@ -12,6 +12,7 @@ import { QUIP_DISPLAY_DURATION_MS } from './quips/quip-config';
 import { QUIP_POOLS, type QuipTrigger } from './quips/quips';
 import { createSchedulerState, schedule, type SchedulerState } from './quips/scheduler';
 import type { Stage } from './xp/curve';
+import { isValidKeychainService } from './mrr/keychain';
 import { DEFAULT_KEYCHAIN_SERVICE } from './mrr/mrr-config';
 import { MrrEngine } from './mrr/mrr-engine';
 import { loadSettingsState, saveSettingsState, type SettingsState } from './mrr/settings-store';
@@ -82,10 +83,12 @@ function parseInjectXp(argv: readonly string[]): number | null {
 
 // Dev flag: --keychain-service <name> overrides the Keychain service name
 // (space-separated, like --quip) so QA never touches the real entries.
+// A name failing isValidKeychainService (leading '-', stray charset,
+// oversize) falls back to the default rather than reaching `security` argv.
 function parseKeychainService(argv: readonly string[]): string {
   const i = argv.indexOf(KEYCHAIN_SERVICE_FLAG);
   const value = i !== -1 ? argv[i + 1] : undefined;
-  return value && value.length > 0 ? value : DEFAULT_KEYCHAIN_SERVICE;
+  return value && isValidKeychainService(value) ? value : DEFAULT_KEYCHAIN_SERVICE;
 }
 
 function createWindow(): BrowserWindow {

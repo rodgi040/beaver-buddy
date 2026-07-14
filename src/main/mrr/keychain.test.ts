@@ -2,7 +2,7 @@
 // Keychain or spawns a real `security` process.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { deleteKeychainSecret, getKeychainSecret, setKeychainSecret } from './keychain';
+import { deleteKeychainSecret, getKeychainSecret, isValidKeychainService, setKeychainSecret } from './keychain';
 
 const execFileMock = vi.fn();
 vi.mock('node:child_process', () => ({ execFile: (...args: unknown[]) => execFileMock(...args) }));
@@ -23,6 +23,19 @@ function notFoundError(command: string): Error & { code: number } {
 
 beforeEach(() => {
   execFileMock.mockReset();
+});
+
+describe('isValidKeychainService', () => {
+  it('accepts the default and QA-style names, rejects option-lookalikes and garbage', () => {
+    expect(isValidKeychainService('beaver-buddy')).toBe(true);
+    expect(isValidKeychainService('beaver-buddy-qa-a1b2c3')).toBe(true);
+    expect(isValidKeychainService('-D')).toBe(false); // would parse as a `security` option
+    expect(isValidKeychainService('--keychain-service')).toBe(false);
+    expect(isValidKeychainService('has space')).toBe(false);
+    expect(isValidKeychainService('')).toBe(false);
+    expect(isValidKeychainService('x'.repeat(65))).toBe(false);
+    expect(isValidKeychainService('x'.repeat(64))).toBe(true);
+  });
 });
 
 describe('setKeychainSecret', () => {

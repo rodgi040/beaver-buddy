@@ -9,7 +9,25 @@ describe('allowlistedFetch', () => {
   it('calls the injected fetch for the exact allowed Stripe host', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(fakeResponse());
     await allowlistedFetch('https://api.stripe.com/v1/subscriptions', undefined, fetchImpl);
-    expect(fetchImpl).toHaveBeenCalledWith('https://api.stripe.com/v1/subscriptions', undefined);
+    expect(fetchImpl).toHaveBeenCalledWith('https://api.stripe.com/v1/subscriptions', { redirect: 'error' });
+  });
+
+  it('always forces redirect: "error" into the init, preserving caller headers', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(fakeResponse());
+    await allowlistedFetch('https://api.stripe.com/v1/subscriptions', { headers: { Authorization: 'Bearer x' } }, fetchImpl);
+    expect(fetchImpl).toHaveBeenCalledWith('https://api.stripe.com/v1/subscriptions', {
+      headers: { Authorization: 'Bearer x' },
+      redirect: 'error',
+    });
+  });
+
+  it('a 3xx (which fetch rejects under redirect: "error") propagates as a rejection', async () => {
+    // With redirect:'error', a real fetch never returns a 3xx Response — it
+    // rejects. Simulate exactly that and confirm the wrapper propagates it.
+    const fetchImpl = vi.fn().mockRejectedValue(new TypeError('fetch failed: unexpected redirect'));
+    await expect(
+      allowlistedFetch('https://api.stripe.com/v1/subscriptions', undefined, fetchImpl),
+    ).rejects.toThrow(/redirect/);
   });
 
   it('calls the injected fetch for the exact allowed RevenueCat host', async () => {

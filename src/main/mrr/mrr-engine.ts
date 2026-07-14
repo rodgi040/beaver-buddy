@@ -12,7 +12,7 @@ import { getKeychainSecret } from './keychain';
 import { getStripeMrr } from './stripe';
 import { getRevenueCatMrr } from './revenuecat';
 import type { FetchLike } from './https-allowlist';
-import { MRR_POLL_MS, MRR_XP_PER_DOLLAR, REVENUECAT_KEY_ACCOUNT, REVENUECAT_PROJECT_ACCOUNT, STRIPE_KEY_ACCOUNT } from './mrr-config';
+import { MRR_MAX_DOLLARS, MRR_POLL_MS, MRR_XP_PER_DOLLAR, REVENUECAT_KEY_ACCOUNT, REVENUECAT_PROJECT_ACCOUNT, STRIPE_KEY_ACCOUNT } from './mrr-config';
 
 export interface MrrEngineDeps {
   readonly xpEngine: Pick<XpEngine, 'getLastMrrAwardDate' | 'awardMrr'>;
@@ -57,7 +57,11 @@ export class MrrEngine {
     if (getMode() !== 'mrr') return;
 
     const today = localDateString((now ?? (() => new Date()))());
-    if (xpEngine.getLastMrrAwardDate() === today) return; // once per local date
+    // Once per local date, and never for a date at-or-before the last
+    // award: <= (lexicographic on YYYY-MM-DD) instead of === means a clock
+    // rolled backwards can't re-award a day that was already paid out.
+    const lastAward = xpEngine.getLastMrrAwardDate();
+    if (lastAward !== null && today <= lastAward) return;
 
     const connected = getConnected();
     const service = getKeychainService();
@@ -85,6 +89,10 @@ export class MrrEngine {
 
     if (!sawConnectedSource) return; // mrr mode but nothing connected — nothing to award
 
-    xpEngine.awardMrr(Math.floor(totalDollars * MRR_XP_PER_DOLLAR), today);
+    // Sanity clamp: negative/NaN collapses to 0 (date still recorded — a
+    // garbage value is not retried the same day), absurd values cap at
+    // MRR_MAX_DOLLARS so a corrupt response can't mint unbounded XP.
+    const dollars = Number.isFinite(totalDollars) ? Math.min(Math.max(0, totalDollars), MRR_MAX_DOLLARS) : 0;
+    xpEngine.awardMrr(Math.floor(dollars * MRR_XP_PER_DOLLAR), today);
   }
 }

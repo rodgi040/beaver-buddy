@@ -19,6 +19,15 @@ import { logRedacted } from './redact';
 // `security`'s exit code when find/delete targets a missing item.
 const ITEM_NOT_FOUND_CODE = 44;
 
+// Service names arrive from a CLI flag: reject anything `security` could
+// parse as an option (leading '-') and anything outside a boring
+// filename-safe charset, bounded to 64 chars.
+const SERVICE_NAME_RE = /^[A-Za-z0-9._][A-Za-z0-9._-]{0,63}$/;
+
+export function isValidKeychainService(value: string): boolean {
+  return SERVICE_NAME_RE.test(value);
+}
+
 function exitCode(error: unknown): number | undefined {
   const code = (error as { code?: unknown } | undefined)?.code;
   return typeof code === 'number' ? code : undefined;
