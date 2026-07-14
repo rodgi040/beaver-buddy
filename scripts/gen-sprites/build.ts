@@ -34,9 +34,9 @@ interface SheetSpec {
 }
 
 const SHEETS: readonly SheetSpec[] = [
-  { name: 'beaver-baby', animations: BABY, order: BEAVER_ANIMATION_ORDER, tile: 32 },
-  { name: 'beaver-teen', animations: TEEN, order: BEAVER_ANIMATION_ORDER, tile: 32 },
-  { name: 'beaver-adult', animations: ADULT, order: BEAVER_ANIMATION_ORDER, tile: 32 },
+  { name: 'beaver-baby', animations: BABY, order: BEAVER_ANIMATION_ORDER, tile: 48 },
+  { name: 'beaver-teen', animations: TEEN, order: BEAVER_ANIMATION_ORDER, tile: 48 },
+  { name: 'beaver-adult', animations: ADULT, order: BEAVER_ANIMATION_ORDER, tile: 48 },
   { name: 'lodge', animations: LODGE_ANIMATIONS, order: LODGE_ANIMATION_ORDER, tile: 48, note: LODGE_NOTE },
 ];
 

@@ -1,8 +1,8 @@
 {
-  "tile": 32,
+  "tile": 48,
   "fps": 10,
-  "sheetWidth": 128,
-  "sheetHeight": 160,
+  "sheetWidth": 192,
+  "sheetHeight": 240,
   "rows": [
     {
       "name": "idle",

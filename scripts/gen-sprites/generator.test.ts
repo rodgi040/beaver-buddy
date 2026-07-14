@@ -22,9 +22,9 @@ interface SheetCase {
 }
 
 const CASES: readonly SheetCase[] = [
-  { name: 'baby', file: 'beaver-baby', animations: BABY, order: BEAVER_ANIMATION_ORDER, tile: 32, tailGuard: true },
-  { name: 'teen', file: 'beaver-teen', animations: TEEN, order: BEAVER_ANIMATION_ORDER, tile: 32, tailGuard: true },
-  { name: 'adult', file: 'beaver-adult', animations: ADULT, order: BEAVER_ANIMATION_ORDER, tile: 32, tailGuard: true },
+  { name: 'baby', file: 'beaver-baby', animations: BABY, order: BEAVER_ANIMATION_ORDER, tile: 48, tailGuard: true },
+  { name: 'teen', file: 'beaver-teen', animations: TEEN, order: BEAVER_ANIMATION_ORDER, tile: 48, tailGuard: true },
+  { name: 'adult', file: 'beaver-adult', animations: ADULT, order: BEAVER_ANIMATION_ORDER, tile: 48, tailGuard: true },
   { name: 'lodge', file: 'lodge', animations: LODGE_ANIMATIONS, order: LODGE_ANIMATION_ORDER, tile: 48, tailGuard: false },
 ];
 
@@ -74,35 +74,44 @@ describe.each(CASES)('sprite generator: $name', ({ name, file, animations, order
   });
 
   // The flat paddle tail is the beaver's signature silhouette — it must
-  // never degrade into a ball or vanish in any frame: a horizontal run of
-  // >=8 filled pixels starting at x<=6, and the far-tail zone (x<=7) no
-  // taller than 5 rows. Holds for every stage — the geometry was designed
-  // so only the tail ever enters the far-left zone.
+  // never degrade into a ball or vanish in any frame. BL-10 (48px codex
+  // art): checked directly against the tail's own two chars (`t`/`T`, never
+  // used elsewhere) rather than "any color in a corner zone" — the 48px
+  // react pose's raised arms can reach into the old 32px-art's left-edge
+  // zone, so a color-agnostic guard would false-positive on non-tail
+  // pixels. Bounds below are measured across every frame of every stage
+  // (min contiguous t/T run = 9px; observed bbox x:[1,27] y:[22,43]),
+  // widened with a small margin — re-measure if the art changes.
+  const TAIL_CHARS = new Set(['t', 'T']);
+  const TAIL_MIN_RUN = 8;
+  const TAIL_MAX_X = 30;
+  const TAIL_MIN_Y = 18;
+  const TAIL_MAX_Y = 45;
   it.skipIf(!tailGuard)('every frame keeps the flat tail-paddle silhouette', () => {
     for (const [anim, frames] of Object.entries(animations)) {
       frames.forEach((frame, i) => {
-        let hasRun = false;
-        for (const row of frame) {
+        let bestRun = 0;
+        frame.forEach((row, y) => {
           let run = 0;
-          let start = -1;
-          for (let x = 0; x < row.length; x += 1) {
-            if (row[x] !== '.') {
-              if (run === 0) start = x;
+          [...row].forEach((ch, x) => {
+            if (TAIL_CHARS.has(ch)) {
               run += 1;
-              if (run >= 8 && start <= 6) hasRun = true;
+              bestRun = Math.max(bestRun, run);
+              expect(x, `${name}.${anim}[${i}] tail pixel (${x},${y}) past x<=${TAIL_MAX_X}`).toBeLessThanOrEqual(
+                TAIL_MAX_X,
+              );
+              expect(y, `${name}.${anim}[${i}] tail pixel (${x},${y}) outside y[${TAIL_MIN_Y},${TAIL_MAX_Y}]`).toBeGreaterThanOrEqual(
+                TAIL_MIN_Y,
+              );
+              expect(y).toBeLessThanOrEqual(TAIL_MAX_Y);
             } else {
               run = 0;
             }
-          }
-        }
-        expect(hasRun, `${name}.${anim}[${i}] lost the tail paddle`).toBe(true);
-
-        const tailRows = frame
-          .map((row, y) => ({ y, filled: [...row.slice(0, 8)].some((ch) => ch !== '.') }))
-          .filter((r) => r.filled)
-          .map((r) => r.y);
-        const span = Math.max(...tailRows) - Math.min(...tailRows) + 1;
-        expect(span, `${name}.${anim}[${i}] tail zone too tall (${span} rows)`).toBeLessThanOrEqual(5);
+          });
+        });
+        expect(bestRun, `${name}.${anim}[${i}] lost the tail paddle (best run ${bestRun}px)`).toBeGreaterThanOrEqual(
+          TAIL_MIN_RUN,
+        );
       });
     }
   });
@@ -117,6 +126,6 @@ describe('sheet validation', () => {
         BABY.idle[1],
       ],
     };
-    expect(() => buildSheet(bad, BEAVER_ANIMATION_ORDER, 32, FPS)).toThrow();
+    expect(() => buildSheet(bad, BEAVER_ANIMATION_ORDER, 48, FPS)).toThrow();
   });
 });
