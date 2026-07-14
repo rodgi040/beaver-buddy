@@ -11,8 +11,11 @@ and scaled 8x nearest-neighbor (`imageSmoothingEnabled = false`).
 Window-content-only, no desktop pixels.
 
 - `BL-6-live-shake.png` — baby sprite mid-shake phase (level 15 -> 16 crossing).
-- `BL-6-live-flash.png` — solid white silhouette blink (composite
-  `source-in` fill), confirming the flash effect renders correctly.
+- `BL-6-live-flash.png` — white silhouette blink (composite `source-in`
+  fill), captured during the launch-crossing run below and composited over
+  a checkerboard backdrop (like the BL-3 contact sheets) so the all-white
+  frame stays legible: the silhouette matches the beaver's body+tail
+  outline exactly, confirming only the sprite's opaque pixels go white.
 - `BL-6-live-teen.png` — teen sprite, react/celebrate pose, right after the
   shake->flash->setStage->celebrate sequence completes.
 - `BL-6-live-adult.png` — adult sprite (visibly broader/heavier than teen,
@@ -51,6 +54,27 @@ with `stage:"teen"` during the transition and `stage:"adult"` after.
 Persisted `xp-state.json` after step 4: `{"xp":3100,"lastSeenLifetimeTokens":0}`
 — `lastSeenLifetimeTokens` stayed 0 throughout, confirming `--inject-xp`
 never touches the real-usage cursor.
+
+## Launch-crossing verification (real-usage path, no injection)
+
+The riskiest delivery path is a stage crossing caused by the tracker's
+initial catch-up ingest at launch (user burned tokens while the app was
+closed): the engine emits the evolution before the renderer page has
+finished loading, so the live IPC send is dropped and only the
+did-finish-load resend of the engine's last update can deliver it.
+Exercised end-to-end:
+
+- Fresh (second) temp userData; `CLAUDE_CONFIG_DIR` pointed at a synthetic
+  fixture dir — one `projects/project-a/session-1.jsonl` with four fake
+  entries (`req-synthetic-*`/`msg-synthetic-*` ids, no real content)
+  totaling 160,000 tokens = 1600 XP = level 17, crossing baby -> teen on
+  the very first ingest. **No** `--inject-xp` flag.
+- `__debugPet` burst (~150ms apart): 10 consecutive polls of
+  `{level:17, stage:"baby", evolving:true}` — the evolution animation
+  played — then `{level:17, stage:"teen", evolving:false}`.
+- Persisted `xp-state.json` afterwards:
+  `{"xp":1600,"lastSeenLifetimeTokens":160000}` — the real-usage cursor
+  moved (unlike the injection runs where it stayed 0).
 
 ## Bug found and fixed during verification
 
