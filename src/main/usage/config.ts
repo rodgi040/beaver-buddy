@@ -1,5 +1,5 @@
-// Tuning constants for usage-log parsing (PRD R7). Kept in one small domain
-// config module per CLAUDE.md's "no magic numbers in logic" rule.
+// Tuning constants for usage-log parsing. Kept in one small domain config
+// module per CLAUDE.md's "no magic numbers in logic" rule.
 
 // Defensive bound on a single JSONL line. Real Claude Code / Codex log lines
 // are normally well under this; an oversized line is either corrupt or a

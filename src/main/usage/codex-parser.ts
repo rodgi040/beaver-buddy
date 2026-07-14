@@ -26,10 +26,11 @@ interface RawCodexLine {
   };
 }
 
+// `reasoning_output_tokens` is deliberately not tracked: it is a subset of
+// `output_tokens` (like cached-within-input), so output already carries it.
 interface NormalizedUsage {
   readonly input: number;
   readonly output: number;
-  readonly reasoning: number;
   readonly cached: number;
 }
 
@@ -44,16 +45,16 @@ function firstNumber(u: Record<string, unknown>, keys: readonly string[]): numbe
   return 0;
 }
 
-// Field names drift across Codex releases — accept the known aliases.
+// Field names drift across Codex releases — these are the same aliases
+// ccusage's own normalization accepts (source-verified).
 function normalizeUsage(u: unknown): NormalizedUsage | null {
   if (!u || typeof u !== 'object') return null;
   const rec = u as Record<string, unknown>;
   const input = firstNumber(rec, ['input_tokens', 'prompt_tokens', 'input']);
   const output = firstNumber(rec, ['output_tokens', 'completion_tokens', 'output']);
-  const reasoning = firstNumber(rec, ['reasoning_output_tokens', 'reasoning_tokens']);
   // Cached is a SUBSET of input, never additional — clamp to input.
   const cached = Math.min(firstNumber(rec, ['cached_input_tokens', 'cache_read_input_tokens', 'cached_tokens']), input);
-  return { input, output, reasoning, cached };
+  return { input, output, cached };
 }
 
 interface TokenEvent {
@@ -115,7 +116,7 @@ export function parseCodexFile(filePath: string): UsageEntry[] {
       : null;
 
   const entries: UsageEntry[] = [];
-  let baseline: NormalizedUsage = { input: 0, output: 0, reasoning: 0, cached: 0 };
+  let baseline: NormalizedUsage = { input: 0, output: 0, cached: 0 };
   let skipping = replaySecond !== null;
 
   for (const event of events) {
@@ -129,17 +130,15 @@ export function parseCodexFile(filePath: string): UsageEntry[] {
 
     let input: number;
     let output: number;
-    let reasoning: number;
     let cached: number;
     if (event.last) {
-      ({ input, output, reasoning, cached } = event.last);
+      ({ input, output, cached } = event.last);
     } else if (event.total) {
       // Saturating subtraction: a field that went down clamps to 0 (no
       // other reset detection); the lower cumulative still becomes the new
       // baseline below.
       input = Math.max(0, event.total.input - baseline.input);
       output = Math.max(0, event.total.output - baseline.output);
-      reasoning = Math.max(0, event.total.reasoning - baseline.reasoning);
       cached = Math.max(0, event.total.cached - baseline.cached);
     } else {
       continue;
@@ -147,7 +146,7 @@ export function parseCodexFile(filePath: string): UsageEntry[] {
 
     if (event.total) baseline = event.total;
 
-    if (input === 0 && output === 0 && reasoning === 0 && cached === 0) continue;
+    if (input === 0 && output === 0 && cached === 0) continue;
 
     cached = Math.min(cached, input);
     entries.push({

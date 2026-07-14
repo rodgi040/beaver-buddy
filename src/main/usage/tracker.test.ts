@@ -62,6 +62,17 @@ describe('UsageTracker', () => {
     expect(changes).toEqual([]);
   });
 
+  it('evicts a deleted log file from the totals on the next refresh', () => {
+    writeClaudeSession(home, 'project-a', 'session-1', { input: 10, output: 5 });
+    const tracker = new UsageTracker({}, home);
+    tracker.refresh();
+    expect(tracker.getTotals().lifetime.totalTokens).toBe(15);
+
+    fs.rmSync(path.join(home, '.claude', 'projects', 'project-a', 'session-1.jsonl'));
+    tracker.refresh();
+    expect(tracker.getTotals().lifetime.totalTokens).toBe(0);
+  });
+
   it('coalesces refreshes onto a single timer interval (fake timers)', () => {
     vi.useFakeTimers();
     const tracker = new UsageTracker({}, home);
