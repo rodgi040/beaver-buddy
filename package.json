@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p src/renderer/tsconfig.json && tsc --noEmit -p scripts/gen-sprites/tsconfig.json",
     "lint": "eslint .",
     "test": "vitest run",
-    "assets:build": "node scripts/gen-sprites/build.ts"
+    "assets:build": "node scripts/gen-sprites/build.ts",
+    "usage:cli": "npm run build && node scripts/usage-cli.js"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
