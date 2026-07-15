@@ -7,6 +7,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+export type Platform = 'win32' | 'darwin' | 'linux';
+
 export interface DiscoveredPaths {
   readonly claudeFiles: readonly string[];
   readonly codexFiles: readonly string[];
@@ -17,6 +19,8 @@ export interface DiscoveredPaths {
 export interface PathEnv {
   readonly CLAUDE_CONFIG_DIR?: string;
   readonly CODEX_HOME?: string;
+  readonly LOCALAPPDATA?: string;
+  readonly APPDATA?: string;
 }
 
 function safeReaddir(dir: string): fs.Dirent[] {
@@ -27,18 +31,34 @@ function safeReaddir(dir: string): fs.Dirent[] {
   }
 }
 
-function claudeConfigDirs(env: PathEnv, home: string): string[] {
+function normalizePlatform(platform: string): Platform {
+  if (platform === 'win32' || platform === 'darwin' || platform === 'linux') return platform;
+  // Defensive fallback: treat unknown platforms as linux so discovery keeps
+  // working on BSD/WSL-like environments without a cast error.
+  return 'linux';
+}
+
+function claudeConfigDirs(env: PathEnv, home: string, platform: Platform): string[] {
   const configured = env.CLAUDE_CONFIG_DIR;
   if (configured && configured.trim().length > 0) {
+    // Comma is the documented separator; semicolon is additionally accepted
+    // because it is the conventional PATH separator on Windows.
     return configured
-      .split(',')
+      .split(/[,;]/)
       .map((d) => d.trim())
       .filter((d) => d.length > 0);
   }
-  // No override: both the current XDG location and the legacy one are used
-  // if present, since users who migrated may still have data in the old spot.
-  const xdg = path.join(home, '.config', 'claude');
+
   const legacy = path.join(home, '.claude');
+
+  if (platform === 'win32') {
+    return [legacy].filter((d) => fs.existsSync(d));
+  }
+
+  // No override on Unix-like systems: both the current XDG location and the
+  // legacy one are used if present, since users who migrated may still have
+  // data in the old spot.
+  const xdg = path.join(home, '.config', 'claude');
   return [xdg, legacy].filter((d) => fs.existsSync(d));
 }
 
@@ -112,11 +132,38 @@ function findCodexFiles(codexHome: string): string[] {
   return [...winners.values()];
 }
 
-export function discoverPaths(env: PathEnv = process.env, home: string = os.homedir()): DiscoveredPaths {
-  const claudeFiles = claudeConfigDirs(env, home).flatMap(findClaudeFiles);
+function codexHomes(env: PathEnv, home: string, platform: Platform): string[] {
+  const configured = env.CODEX_HOME;
+  if (configured && configured.trim().length > 0) {
+    return [configured];
+  }
 
-  const codexHome = env.CODEX_HOME && env.CODEX_HOME.trim().length > 0 ? env.CODEX_HOME : path.join(home, '.codex');
-  const codexFiles = findCodexFiles(codexHome);
+  if (platform === 'win32') {
+    const localAppData = env.LOCALAPPDATA;
+    const appData = env.APPDATA;
+    return [
+      localAppData ? path.join(localAppData, 'Codex') : '',
+      appData ? path.join(appData, 'Codex') : '',
+      path.join(home, '.codex'),
+    ].filter((d) => d.length > 0);
+  }
+
+  return [path.join(home, '.codex')];
+}
+
+function resolveCodexHome(env: PathEnv, home: string, platform: Platform): string | undefined {
+  return codexHomes(env, home, platform).find((codexHome) => fs.existsSync(codexHome));
+}
+
+export function discoverPaths(
+  env: PathEnv = process.env,
+  home: string = os.homedir(),
+  platform: Platform = normalizePlatform(process.platform),
+): DiscoveredPaths {
+  const claudeFiles = claudeConfigDirs(env, home, platform).flatMap(findClaudeFiles);
+
+  const codexHome = resolveCodexHome(env, home, platform);
+  const codexFiles = codexHome ? findCodexFiles(codexHome) : [];
 
   return { claudeFiles, codexFiles };
 }

@@ -86,7 +86,7 @@ export function createSettingsHandlers(
 
       const mode = nextModeAfterSave(parsed.mode ?? current.mode, stripeConnected, revenuecatConnected);
       const next: SettingsState = { mode, stripeConnected, revenuecatConnected };
-      saveSettingsState(deps.stateDir, next);
+      await saveSettingsState(deps.stateDir, next);
       deps.onSettingsChanged(next);
       return { ok: true };
     },
@@ -115,7 +115,7 @@ export function createSettingsHandlers(
 
       const mode = nextModeAfterDisconnect(current.mode, stripeConnected, revenuecatConnected);
       const next: SettingsState = { mode, stripeConnected, revenuecatConnected };
-      saveSettingsState(deps.stateDir, next);
+      await saveSettingsState(deps.stateDir, next);
       deps.onSettingsChanged(next);
       return { ok: true };
     },

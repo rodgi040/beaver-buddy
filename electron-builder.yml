@@ -10,3 +10,11 @@ mac:
   category: public.app-category.utilities
   minimumSystemVersion: '14.0'
   target: dmg
+win:
+  target:
+    - nsis
+    - portable
+  icon: assets/icon.ico
+nsis:
+  installerIcon: assets/icon.ico
+  uninstallerIcon: assets/icon.ico

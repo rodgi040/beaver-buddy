@@ -12,3 +12,7 @@ release/
 # Originals live outside the repo; only the ingested sheets under
 # assets/sprites/ are committed (CLAUDE.md: no raw image-gen intermediates).
 assets-src/
+
+# Local /fp-new-projekt slash-command template files. Imported for local
+# scaffolding only; never committed.
+.fp-new-projekt/

@@ -1,6 +1,32 @@
-import { describe, expect, it } from 'vitest';
-import { buildMenuTemplate, formatPetLabel, type TrayCallbacks } from './tray';
+import path from 'node:path';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { buildMenuTemplate, formatPetLabel, loadTrayIcon, type TrayCallbacks } from './tray';
 import type { MenuItemConstructorOptions } from 'electron';
+
+const createdIcons: { path: string; template?: boolean }[] = [];
+
+vi.mock('electron', async () => {
+  const actual = await vi.importActual<typeof import('electron')>('electron');
+  return {
+    ...actual,
+    app: {
+      getAppPath: vi.fn(() => '/mock/app/path'),
+    },
+    nativeImage: {
+      createFromPath: vi.fn((path: string) => {
+        const icon = {
+          path,
+          template: false,
+          setTemplateImage(value: boolean) {
+            this.template = value;
+          },
+        };
+        createdIcons.push(icon);
+        return icon;
+      }),
+    },
+  };
+});
 
 // tray.ts imports 'electron' at module scope, but under plain Node (as
 // vitest runs) that resolves to a path string, not the real API — so
@@ -103,7 +129,7 @@ describe('buildMenuTemplate: growth submenu', () => {
   it('mode click calls onSelectGrowthMode then rebuild', () => {
     const calls: string[] = [];
     const submenu = growthSubmenu(
-      buildMenuTemplate(callbacks({ onSelectGrowthMode: () => calls.push('select') }), () => calls.push('rebuild')),
+      buildMenuTemplate(callbacks({ onSelectGrowthMode: () => { calls.push('select'); } }), () => calls.push('rebuild')),
     );
     submenu.find((i) => i.label === 'Source: Tokens')?.click?.(undefined as never, undefined as never, undefined as never);
     expect(calls).toEqual(['select', 'rebuild']);
@@ -116,5 +142,50 @@ describe('buildMenuTemplate: growth submenu', () => {
     );
     submenu.find((i) => i.label === 'Growth settings…')?.click?.(undefined as never, undefined as never, undefined as never);
     expect(calls).toEqual(['open']);
+  });
+});
+
+interface MockNativeImage {
+  path: string;
+  template: boolean;
+}
+
+describe('loadTrayIcon', () => {
+  function withPlatform(platform: string, fn: () => void): void {
+    const original = Object.getOwnPropertyDescriptor(process, 'platform');
+    Object.defineProperty(process, 'platform', { value: platform });
+    try {
+      fn();
+    } finally {
+      if (original) Object.defineProperty(process, 'platform', original);
+    }
+  }
+
+  beforeEach(() => {
+    createdIcons.length = 0;
+  });
+
+  it('loads tray-icon.png on Windows without calling setTemplateImage', () => {
+    withPlatform('win32', () => {
+      const icon = loadTrayIcon() as unknown as MockNativeImage;
+      expect(icon.path).toBe(path.join('/mock/app/path', 'assets', 'tray-icon.png'));
+      expect(icon.template).toBe(false);
+    });
+  });
+
+  it('loads tray-iconTemplate.png on macOS and marks it as template', () => {
+    withPlatform('darwin', () => {
+      const icon = loadTrayIcon() as unknown as MockNativeImage;
+      expect(icon.path).toBe(path.join('/mock/app/path', 'assets', 'tray-iconTemplate.png'));
+      expect(icon.template).toBe(true);
+    });
+  });
+
+  it('loads tray-icon.png on Linux without calling setTemplateImage', () => {
+    withPlatform('linux', () => {
+      const icon = loadTrayIcon() as unknown as MockNativeImage;
+      expect(icon.path).toBe(path.join('/mock/app/path', 'assets', 'tray-icon.png'));
+      expect(icon.template).toBe(false);
+    });
   });
 });

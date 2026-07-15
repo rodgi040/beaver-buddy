@@ -3,7 +3,7 @@
 // in xp/engine.ts — this module only renders the menu and forwards clicks.
 
 import path from 'node:path';
-import { app, Menu, nativeImage, Tray, type MenuItemConstructorOptions } from 'electron';
+import { app, Menu, nativeImage, Tray, type MenuItemConstructorOptions, type NativeImage } from 'electron';
 import { xpForLevel, type Stage } from './xp/curve';
 
 export interface TrayCallbacks {
@@ -14,7 +14,7 @@ export interface TrayCallbacks {
   // MRR is hidden from the submenu entirely (not just disabled) until at
   // least one source is connected.
   isMrrAvailable: () => boolean;
-  onSelectGrowthMode: (mode: 'tokens' | 'mrr') => void;
+  onSelectGrowthMode: (mode: 'tokens' | 'mrr') => void | Promise<void>;
   onOpenGrowthSettings: () => void;
 }
 
@@ -78,10 +78,17 @@ export interface TrayHandle {
 // native Tray context menu has no external readback API, so a live check
 // that the MRR item is hidden/shown has nothing else to poll. Optional and
 // a no-op unless main.ts wires it behind a debug flag.
+export function loadTrayIcon(): NativeImage {
+  const iconFileName = process.platform === 'darwin' ? 'tray-iconTemplate.png' : 'tray-icon.png';
+  const icon = nativeImage.createFromPath(path.join(app.getAppPath(), 'assets', iconFileName));
+  if (process.platform === 'darwin') {
+    icon.setTemplateImage(true);
+  }
+  return icon;
+}
+
 export function createTray(callbacks: TrayCallbacks, onMenuBuilt?: (labels: readonly string[]) => void): TrayHandle {
-  const iconPath = path.join(app.getAppPath(), 'assets', 'tray-iconTemplate.png');
-  const icon = nativeImage.createFromPath(iconPath);
-  icon.setTemplateImage(true);
+  const icon = loadTrayIcon();
 
   const tray = new Tray(icon);
   tray.setToolTip('Beaver Buddy');

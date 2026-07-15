@@ -42,6 +42,6 @@ export function loadSettingsState(stateDir: string): SettingsState {
   }
 }
 
-export function saveSettingsState(stateDir: string, state: SettingsState): void {
-  atomicWriteFile(stateDir, FILE_NAME, JSON.stringify(state));
+export async function saveSettingsState(stateDir: string, state: SettingsState): Promise<void> {
+  await atomicWriteFile(stateDir, FILE_NAME, JSON.stringify(state));
 }

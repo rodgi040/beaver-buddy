@@ -7,7 +7,7 @@
 // something actually changed (dirty flag) and fully skips work while the
 // document is hidden.
 
-import { createRoamState, tick, type RoamState, type Bounds } from './roam.js';
+import { clampRoamStateToBounds, createRoamState, tick, type RoamState, type Bounds } from './roam.js';
 import {
   BUBBLE_TAIL_SIZE_PX,
   EVOLUTION_SHAKE_JITTER_PX,
@@ -32,6 +32,7 @@ import {
 } from './evolution.js';
 import { hatchShakeOffset, sparkOffsets, startHatch, tickHatch, type HatchState } from './hatch.js';
 import { drawBubble, layoutBubble } from './bubble.js';
+import { applyDpr } from './canvas-dpr.js';
 
 interface QuipChangedPayload {
   readonly text: string;
@@ -45,6 +46,7 @@ declare global {
       onPetChanged(callback: (pet: PetChangedPayload) => void): void;
       onHatchStart(callback: () => void): void;
       onQuip(callback: (quip: QuipChangedPayload) => void): void;
+      onBoundsChanged(callback: (bounds: { width: number; height: number }) => void): void;
     };
     // Read-only diagnostic surface; nothing in the app reads it.
     __debugRoam?: RoamState;
@@ -78,18 +80,22 @@ if (!(canvasEl instanceof HTMLCanvasElement)) {
 }
 const canvas: HTMLCanvasElement = canvasEl;
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
 const context = canvas.getContext('2d');
 if (!context) {
   throw new Error('2d canvas context unavailable');
 }
 const ctx: CanvasRenderingContext2D = context;
-ctx.imageSmoothingEnabled = false;
 
-function bounds(): Bounds {
-  return { width: canvas.width, height: canvas.height };
+// Roaming, bubbles, hatch placement and dirty-rect math all operate in logical
+// pixels. The canvas backing store and context transform scale by DPR so the
+// pixel art stays crisp on Windows 125 %/150 %/200 % displays.
+let logicalBounds: Bounds = { width: window.innerWidth, height: window.innerHeight };
+let currentDpr = window.devicePixelRatio || 1;
+
+applyDpr(canvas, ctx, logicalBounds.width, logicalBounds.height, currentDpr);
+
+export function bounds(): Bounds {
+  return logicalBounds;
 }
 
 let paused = false;
@@ -185,6 +191,28 @@ window.beaverBuddy.onHatchStart(() => {
   needsDraw = true;
 });
 
+window.beaverBuddy.onBoundsChanged((next) => {
+  // Use the explicit bounds from the main process rather than
+  // window.innerWidth/Height, which may not be atomically updated when the
+  // overlay window is resized.
+  logicalBounds = { width: next.width, height: next.height };
+  applyDpr(canvas, ctx, logicalBounds.width, logicalBounds.height, currentDpr);
+  needsDraw = true;
+  roamState = clampRoamStateToBounds(roamState, bounds());
+});
+
+// onBoundsChanged only fires when the main process detects a work-area change.
+// Windows display scaling can change the DPR without changing the logical
+// window size, so watch for DPR jumps on resize events as well.
+window.addEventListener('resize', () => {
+  const nextDpr = window.devicePixelRatio || 1;
+  if (nextDpr !== currentDpr) {
+    currentDpr = nextDpr;
+    applyDpr(canvas, ctx, logicalBounds.width, logicalBounds.height, currentDpr);
+    needsDraw = true;
+  }
+});
+
 // The hatch always plays in the bottom-left corner; the margin constant is
 // its only placement tuning. Both the margin and the lodge tile are scaled
 // by LODGE_SCALE (not PET_SCALE — the lodge sheet kept its 48px native tile,
@@ -265,7 +293,9 @@ function draw(): void {
   if (dirtyRect) {
     ctx.clearRect(dirtyRect.x, dirtyRect.y, dirtyRect.width, dirtyRect.height);
   } else {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Clear in logical coordinates: the context is scaled by DPR, so this
+    // covers the entire physical canvas without using canvas.width/height.
+    ctx.clearRect(0, 0, bounds().width, bounds().height);
   }
   if (hatchState) {
     drawHatch(hatchState);

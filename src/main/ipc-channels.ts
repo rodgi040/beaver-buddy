@@ -8,6 +8,9 @@ export const HATCH_START_CHANNEL = 'state:hatch';
 // One-way main -> renderer only; carries a canned quip line + how long the
 // renderer should keep it on screen.
 export const QUIP_CHANGED_CHANNEL = 'state:quip';
+// One-way main -> renderer only; notifies the renderer of the overlay's
+// current work-area bounds so it does not rely on window.innerWidth/Height.
+export const BOUNDS_CHANGED_CHANNEL = 'state:bounds';
 
 // Settings-window-only, renderer -> main invoke/response channels (the
 // app's first renderer-originated IPC). Never reachable from the pet

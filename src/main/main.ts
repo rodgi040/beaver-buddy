@@ -1,10 +1,17 @@
 import path from 'node:path';
 import { app, BrowserWindow, powerMonitor, screen } from 'electron';
 import { applySessionHardening, applyWindowHardening } from './hardening';
-import { HATCH_START_CHANNEL, PAUSE_CHANGED_CHANNEL, PET_CHANGED_CHANNEL, QUIP_CHANGED_CHANNEL } from './ipc-channels';
+import {
+  BOUNDS_CHANGED_CHANNEL,
+  HATCH_START_CHANNEL,
+  PAUSE_CHANGED_CHANNEL,
+  PET_CHANGED_CHANNEL,
+  QUIP_CHANGED_CHANNEL,
+} from './ipc-channels';
 import { loadOnboardingState, saveOnboardingState } from './onboarding';
 import { createPauseState, isPaused, setSystemPause, toggleManualPause, type PauseState } from './pause-state';
 import { createTray, formatPetLabel } from './tray';
+import { configureAlwaysOnTop, fitWindowToWorkArea, getPrimaryWorkAreaInfo, onWorkAreaChanged } from './overlay-adapter';
 import { XpEngine, type PetUpdate } from './xp/engine';
 import { UsageTracker } from './usage/tracker';
 import { createDetectorState, detectEvents } from './quips/detectors';
@@ -24,6 +31,22 @@ const QUIP_FLAG = '--quip';
 const KEYCHAIN_SERVICE_FLAG = '--keychain-service';
 const MRR_POLL_NOW_FLAG = '--mrr-poll-now';
 const QUIP_TRIGGERS = Object.keys(QUIP_POOLS) as readonly QuipTrigger[];
+
+// Enforce a single running instance. A second launch terminates immediately
+// and, on Windows, asks the first instance to surface its window.
+const singleInstanceLock = app.requestSingleInstanceLock();
+if (!singleInstanceLock) {
+  app.quit();
+  process.exit(0);
+}
+
+app.on('second-instance', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+  }
+});
 
 let pauseState: PauseState = createPauseState();
 let mainWindow: BrowserWindow | null = null;
@@ -115,7 +138,7 @@ function createWindow(): BrowserWindow {
     },
   });
 
-  win.setAlwaysOnTop(true, 'floating');
+  configureAlwaysOnTop(win);
   win.setIgnoreMouseEvents(true);
   ignoresMouseEvents = true;
 
@@ -143,13 +166,18 @@ function printSmokeResultAndExit(win: BrowserWindow): void {
       // set once at window construction and cannot change afterwards.
       transparent: true,
       paused: isPaused(pauseState),
+      boundsMatchWorkArea: (() => {
+        const wb = win.getBounds();
+        const wa = screen.getPrimaryDisplay().workArea;
+        return wb.x === wa.x && wb.y === wa.y && wb.width === wa.width && wb.height === wa.height;
+      })(),
     };
     process.stdout.write(`${JSON.stringify(result)}\n`);
     app.exit(0);
   }, SMOKE_DELAY_MS);
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   applySessionHardening();
 
   const stateDir = app.getPath('userData');
@@ -163,10 +191,35 @@ app.whenReady().then(() => {
     // exactly-once even if the app is killed mid-sequence (~6s window) —
     // acceptable for a one-shot cosmetic onboarding, and --reset-hatch
     // recovers it. Avoids adding a hatch:done renderer -> main channel.
-    saveOnboardingState(stateDir, { hatched: true });
+    await saveOnboardingState(stateDir, { hatched: true });
   }
 
   mainWindow = createWindow();
+
+  let lastWorkArea = getPrimaryWorkAreaInfo();
+  fitWindowToWorkArea(mainWindow, lastWorkArea);
+
+  const unsubscribeWorkArea = onWorkAreaChanged((next) => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    if (
+      next.x === lastWorkArea.x &&
+      next.y === lastWorkArea.y &&
+      next.width === lastWorkArea.width &&
+      next.height === lastWorkArea.height
+    ) {
+      return;
+    }
+    lastWorkArea = next;
+    fitWindowToWorkArea(mainWindow, next);
+    mainWindow.webContents.send(BOUNDS_CHANGED_CHANNEL, {
+      width: next.width,
+      height: next.height,
+    });
+  });
+
+  mainWindow.on('closed', () => {
+    unsubscribeWorkArea();
+  });
 
   const xpEngine = new XpEngine(stateDir);
 
@@ -212,10 +265,10 @@ app.whenReady().then(() => {
       getPetLabel: () => formatPetLabel(xpEngine.getState()),
       getGrowthMode: () => growthSettings.mode,
       isMrrAvailable: () => growthSettings.stripeConnected || growthSettings.revenuecatConnected,
-      onSelectGrowthMode: (mode) => {
+      onSelectGrowthMode: async (mode) => {
         if (mode === 'mrr' && !(growthSettings.stripeConnected || growthSettings.revenuecatConnected)) return;
         growthSettings = { ...growthSettings, mode };
-        saveSettingsState(stateDir, growthSettings);
+        await saveSettingsState(stateDir, growthSettings);
         xpEngine.setMode(growthSettings.mode);
         if (mode === 'mrr' && mrrPollNowOnModeSwitch) void mrrEngine.pollNow();
       },
@@ -239,12 +292,12 @@ app.whenReady().then(() => {
 
   const injectXpAmount = parseInjectXp(process.argv);
   if (injectXpAmount !== null) {
-    xpEngine.injectXp(injectXpAmount);
+    await xpEngine.injectXp(injectXpAmount);
   }
 
   const usageTracker = new UsageTracker();
   usageTracker.start();
-  xpEngine.attachTracker(usageTracker);
+  await xpEngine.attachTracker(usageTracker);
 
   // codingSession/tokenSpike/idle detection rides the tracker's own refresh
   // cadence via onTick (fires whether usage changed or not — idle detection
@@ -261,6 +314,13 @@ app.whenReady().then(() => {
   // engine update — including any evolution launch-time accrual already
   // triggered — is (re-)sent once the page is ready to receive it.
   mainWindow.webContents.once('did-finish-load', () => {
+    // Send the initial bounds explicitly so the renderer never has to infer
+    // the work area from window.innerWidth/Height.
+    mainWindow?.webContents.send(BOUNDS_CHANGED_CHANNEL, {
+      width: lastWorkArea.width,
+      height: lastWorkArea.height,
+    });
+
     // Hatch first: the renderer suppresses the animated evolution for pet
     // updates that arrive while a hatch is active, which only works if the
     // hatch message lands before a launch-time evolving update.

@@ -19,9 +19,9 @@ describe('settings store', () => {
     expect(loadSettingsState(stateDir)).toEqual({ mode: 'tokens', stripeConnected: false, revenuecatConnected: false });
   });
 
-  it('roundtrips a saved state', () => {
+  it('roundtrips a saved state', async () => {
     const state = { mode: 'mrr' as const, stripeConnected: true, revenuecatConnected: false };
-    saveSettingsState(stateDir, state);
+    await saveSettingsState(stateDir, state);
     expect(loadSettingsState(stateDir)).toEqual(state);
   });
 
@@ -40,8 +40,8 @@ describe('settings store', () => {
     expect(loadSettingsState(stateDir)).toEqual({ mode: 'tokens', stripeConnected: false, revenuecatConnected: false });
   });
 
-  it('never persists key material — only mode/connected booleans are ever written', () => {
-    saveSettingsState(stateDir, { mode: 'mrr', stripeConnected: true, revenuecatConnected: true });
+  it('never persists key material — only mode/connected booleans are ever written', async () => {
+    await saveSettingsState(stateDir, { mode: 'mrr', stripeConnected: true, revenuecatConnected: true });
     const raw = fs.readFileSync(path.join(stateDir, 'growth-settings.json'), 'utf8');
     expect(Object.keys(JSON.parse(raw)).sort()).toEqual(['mode', 'revenuecatConnected', 'stripeConnected']);
   });

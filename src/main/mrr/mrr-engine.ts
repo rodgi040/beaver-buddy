@@ -93,6 +93,6 @@ export class MrrEngine {
     // garbage value is not retried the same day), absurd values cap at
     // MRR_MAX_DOLLARS so a corrupt response can't mint unbounded XP.
     const dollars = Number.isFinite(totalDollars) ? Math.min(Math.max(0, totalDollars), MRR_MAX_DOLLARS) : 0;
-    xpEngine.awardMrr(Math.floor(dollars * MRR_XP_PER_DOLLAR), today);
+    await xpEngine.awardMrr(Math.floor(dollars * MRR_XP_PER_DOLLAR), today);
   }
 }

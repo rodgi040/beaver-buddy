@@ -40,7 +40,7 @@ export class UsageTracker {
   }
 
   // Returns an unsubscribe function.
-  onChange(callback: (totals: UsageTotals) => void): () => void {
+  onChange(callback: (totals: UsageTotals) => void | Promise<void>): () => void {
     this.listeners.add(callback);
     return () => {
       this.listeners.delete(callback);
@@ -49,7 +49,7 @@ export class UsageTracker {
 
   // Fires on every refresh tick, whether totals changed or not. Returns an
   // unsubscribe function.
-  onTick(callback: (totals: UsageTotals) => void): () => void {
+  onTick(callback: (totals: UsageTotals) => void | Promise<void>): () => void {
     this.tickListeners.add(callback);
     return () => {
       this.tickListeners.delete(callback);
@@ -116,9 +116,17 @@ export class UsageTracker {
       // Codex event dedup is cross-file, so it runs over the combined set
       // here rather than inside the per-file parser.
       this.totals = aggregate([...claudeEntries, ...dedupeCodexEntries(codexEntries)]);
-      for (const listener of this.listeners) listener(this.totals);
+      for (const listener of this.listeners) {
+        Promise.resolve(listener(this.totals)).catch((error: unknown) => {
+          console.error('UsageTracker onChange callback failed:', error);
+        });
+      }
     }
 
-    for (const listener of this.tickListeners) listener(this.totals);
+    for (const listener of this.tickListeners) {
+      Promise.resolve(listener(this.totals)).catch((error: unknown) => {
+        console.error('UsageTracker onTick callback failed:', error);
+      });
+    }
   }
 }

@@ -27,7 +27,7 @@ export interface PetUpdate {
 // touching real usage-log files or a real Electron process.
 export interface TrackerLike {
   getTotals(): UsageTotals;
-  onChange(callback: (totals: UsageTotals) => void): () => void;
+  onChange(callback: (totals: UsageTotals) => void | Promise<void>): () => void;
 }
 
 // Growth source, mirrored from settings-store.ts's Mode without importing
@@ -80,49 +80,49 @@ export class XpEngine {
 
   // Wires the usage tracker: applies whatever it has already scanned once,
   // then every subsequent change. Returns an unsubscribe function.
-  attachTracker(tracker: TrackerLike): () => void {
+  async attachTracker(tracker: TrackerLike): Promise<() => void> {
     const unsubscribe = tracker.onChange((totals) => this.ingestLifetimeTokens(totals.lifetime.totalTokens));
-    this.ingestLifetimeTokens(tracker.getTotals().lifetime.totalTokens);
+    await this.ingestLifetimeTokens(tracker.getTotals().lifetime.totalTokens);
     return unsubscribe;
   }
 
-  ingestLifetimeTokens(totalTokens: number): void {
+  async ingestLifetimeTokens(totalTokens: number): Promise<void> {
     const delta = Math.max(0, totalTokens - this.state.lastSeenLifetimeTokens);
     if (delta === 0) return; // cursor only moves forward — no double count
     if (this.mode === 'mrr') {
       // Cursor keeps advancing silently — no XP award — so switching back
       // to tokens mode later can never retroactively award this history
       // (the no-double-count invariant holds in both switch directions).
-      this.applyState({ lastSeenLifetimeTokens: totalTokens });
+      await this.applyState({ lastSeenLifetimeTokens: totalTokens });
       return;
     }
-    this.applyXp(delta / TOKENS_PER_XP, totalTokens);
+    await this.applyXp(delta / TOKENS_PER_XP, totalTokens);
   }
 
   // Dev-only acceptance path (--inject-xp): goes through the same
   // persist/level/evolution logic as real accrual, but leaves the token
   // cursor untouched so it can never mask or double-count real usage.
-  injectXp(amount: number): void {
+  async injectXp(amount: number): Promise<void> {
     if (!(amount > 0)) return;
-    this.applyXp(amount, this.state.lastSeenLifetimeTokens);
+    await this.applyXp(amount, this.state.lastSeenLifetimeTokens);
   }
 
   // MRR growth-mode award path: applies XP and records the local date it
   // was awarded for, atomically (one saveState), so a poll that finds
   // mrr_dollars * rate rounds to 0 XP still records the date and is not
   // retried later the same day.
-  awardMrr(xpAmount: number, localDate: string): void {
-    this.applyState({ xp: this.state.xp + Math.max(0, xpAmount), lastMrrAwardDate: localDate });
+  async awardMrr(xpAmount: number, localDate: string): Promise<void> {
+    await this.applyState({ xp: this.state.xp + Math.max(0, xpAmount), lastMrrAwardDate: localDate });
   }
 
-  private applyXp(deltaXp: number, lastSeenLifetimeTokens: number): void {
-    this.applyState({ xp: this.state.xp + deltaXp, lastSeenLifetimeTokens });
+  private async applyXp(deltaXp: number, lastSeenLifetimeTokens: number): Promise<void> {
+    await this.applyState({ xp: this.state.xp + deltaXp, lastSeenLifetimeTokens });
   }
 
-  private applyState(patch: Partial<XpState>): void {
+  private async applyState(patch: Partial<XpState>): Promise<void> {
     const before = this.getState();
     this.state = { ...this.state, ...patch };
-    saveState(this.stateDir, this.state);
+    await saveState(this.stateDir, this.state);
     const after = this.getState();
     const evolvingTo = after.stage !== before.stage ? after.stage : undefined;
     const update: PetUpdate = { level: after.level, stage: evolvingTo ? before.stage : after.stage, evolvingTo };

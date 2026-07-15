@@ -29,7 +29,7 @@ class FakeXp {
   getLastMrrAwardDate(): string | null {
     return this.lastMrrAwardDate;
   }
-  awardMrr(xp: number, date: string): void {
+  async awardMrr(xp: number, date: string): Promise<void> {
     this.awarded.push({ xp, date });
     this.lastMrrAwardDate = date;
   }
