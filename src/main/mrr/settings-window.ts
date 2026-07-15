@@ -9,7 +9,12 @@
 import path from 'node:path';
 import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron';
 import { applyWindowHardening } from '../hardening';
-import { SETTINGS_DISCONNECT_CHANNEL, SETTINGS_READ_STATUS_CHANNEL, SETTINGS_SAVE_CHANNEL } from '../ipc-channels';
+import {
+  SETTINGS_DISCONNECT_CHANNEL,
+  SETTINGS_READ_STATUS_CHANNEL,
+  SETTINGS_RESET_PET_CHANNEL,
+  SETTINGS_SAVE_CHANNEL,
+} from '../ipc-channels';
 import { deleteKeychainSecret, setKeychainSecret } from './keychain';
 import { REVENUECAT_KEY_ACCOUNT, REVENUECAT_PROJECT_ACCOUNT, STRIPE_KEY_ACCOUNT } from './mrr-config';
 import { saveSettingsState, type Mode, type SettingsState } from './settings-store';
@@ -20,6 +25,8 @@ export interface SettingsWindowDeps {
   readonly keychainService: string;
   readonly getSettings: () => SettingsState;
   readonly onSettingsChanged: (next: SettingsState) => void;
+  // Wipes pet XP to level 1 / baby and replays hatch — growth keys/mode untouched.
+  readonly onPetReset: () => void;
 }
 
 let settingsWindow: BrowserWindow | null = null;
@@ -45,6 +52,7 @@ export interface SettingsHandlers {
   readStatus(event: IpcMainInvokeEvent): unknown;
   save(event: IpcMainInvokeEvent, payload: unknown): Promise<unknown>;
   disconnect(event: IpcMainInvokeEvent, payload: unknown): Promise<unknown>;
+  resetPet(event: IpcMainInvokeEvent): unknown;
 }
 
 // Handler bodies are Electron-free (validate + keychain + settings store +
@@ -119,6 +127,12 @@ export function createSettingsHandlers(
       deps.onSettingsChanged(next);
       return { ok: true };
     },
+
+    resetPet(event) {
+      if (!isAuthorized(event)) return { ok: false, error: 'unauthorized' };
+      deps.onPetReset();
+      return { ok: true };
+    },
   };
 }
 
@@ -130,6 +144,7 @@ function registerHandlers(deps: SettingsWindowDeps): void {
   ipcMain.handle(SETTINGS_READ_STATUS_CHANNEL, (event) => handlers.readStatus(event));
   ipcMain.handle(SETTINGS_SAVE_CHANNEL, (event, payload: unknown) => handlers.save(event, payload));
   ipcMain.handle(SETTINGS_DISCONNECT_CHANNEL, (event, payload: unknown) => handlers.disconnect(event, payload));
+  ipcMain.handle(SETTINGS_RESET_PET_CHANNEL, (event) => handlers.resetPet(event));
 }
 
 export function openSettingsWindow(deps: SettingsWindowDeps): void {
@@ -142,7 +157,7 @@ export function openSettingsWindow(deps: SettingsWindowDeps): void {
 
   const win = new BrowserWindow({
     width: 420,
-    height: 480,
+    height: 560,
     resizable: false,
     title: 'Beaver Buddy — Growth Settings',
     webPreferences: {
