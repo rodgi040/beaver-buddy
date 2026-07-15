@@ -52,6 +52,7 @@ describe('createSettingsHandlers', () => {
   let stateDir: string;
   let settings: SettingsState;
   let changed: SettingsState[];
+  let petResets: number;
 
   const fakeEvent = {} as IpcMainInvokeEvent;
 
@@ -64,6 +65,9 @@ describe('createSettingsHandlers', () => {
         settings = next;
         changed.push(next);
       },
+      onPetReset: () => {
+        petResets += 1;
+      },
     };
   }
 
@@ -71,18 +75,21 @@ describe('createSettingsHandlers', () => {
     stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bb-settings-window-'));
     settings = { mode: 'tokens', stripeConnected: false, revenuecatConnected: false };
     changed = [];
+    petResets = 0;
   });
 
   afterEach(() => {
     fs.rmSync(stateDir, { recursive: true, force: true });
   });
 
-  it('unauthorized sender is rejected on all three handlers, with no state change', async () => {
+  it('unauthorized sender is rejected on all handlers, with no state change', async () => {
     const handlers = createSettingsHandlers(deps(), () => false);
     expect(handlers.readStatus(fakeEvent)).toEqual({ error: 'unauthorized' });
     await expect(handlers.save(fakeEvent, { stripeKey: 'rk_fake' })).resolves.toEqual({ ok: false, error: 'unauthorized' });
     await expect(handlers.disconnect(fakeEvent, { target: 'stripe' })).resolves.toEqual({ ok: false, error: 'unauthorized' });
+    expect(handlers.resetPet(fakeEvent)).toEqual({ ok: false, error: 'unauthorized' });
     expect(changed).toHaveLength(0);
+    expect(petResets).toBe(0);
   });
 
   it('readStatus returns only the three booleans/mode fields', () => {
@@ -114,5 +121,14 @@ describe('createSettingsHandlers', () => {
     const handlers = createSettingsHandlers(deps(), () => true);
     await handlers.disconnect(fakeEvent, { target: 'revenuecat' });
     expect(settings).toEqual({ mode: 'mrr', stripeConnected: true, revenuecatConnected: false });
+  });
+
+  it('resetPet calls onPetReset and leaves growth settings untouched', () => {
+    settings = { mode: 'mrr', stripeConnected: true, revenuecatConnected: false };
+    const handlers = createSettingsHandlers(deps(), () => true);
+    expect(handlers.resetPet(fakeEvent)).toEqual({ ok: true });
+    expect(petResets).toBe(1);
+    expect(settings).toEqual({ mode: 'mrr', stripeConnected: true, revenuecatConnected: false });
+    expect(changed).toHaveLength(0);
   });
 });

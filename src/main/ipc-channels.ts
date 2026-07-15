@@ -15,3 +15,5 @@ export const QUIP_CHANGED_CHANNEL = 'state:quip';
 export const SETTINGS_SAVE_CHANNEL = 'settings:save';
 export const SETTINGS_READ_STATUS_CHANNEL = 'settings:read-status';
 export const SETTINGS_DISCONNECT_CHANNEL = 'settings:disconnect';
+// Settings-window-only: wipe pet XP back to level 1 / baby (token cursor kept).
+export const SETTINGS_RESET_PET_CHANNEL = 'settings:reset-pet';

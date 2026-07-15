@@ -198,6 +198,13 @@ app.whenReady().then(() => {
         tray.refresh();
         if (growthSettings.mode === 'mrr' && mrrPollNowOnModeSwitch) void mrrEngine.pollNow();
       },
+      onPetReset: () => {
+        // Hatch first so the renderer has hatchState before PET_CHANGED from
+        // resetProgress (same ordering as a first-launch hatch).
+        mainWindow?.webContents.send(HATCH_START_CHANNEL);
+        saveOnboardingState(stateDir, { hatched: true });
+        xpEngine.resetProgress();
+      },
     });
   }
 

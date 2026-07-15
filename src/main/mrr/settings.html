@@ -76,6 +76,14 @@
       <label class="row"><input type="radio" name="mode" id="modeMrr" value="mrr" /> MRR</label>
     </fieldset>
 
+    <fieldset>
+      <legend>Pet</legend>
+      <p style="margin: 0 0 8px; font-size: 12px; color: #555">
+        Reset XP to level 1 (baby). Past token usage is not re-counted; only new activity earns XP again.
+      </p>
+      <button id="resetPet" type="button">Reset beaver…</button>
+    </fieldset>
+
     <div id="status"></div>
 
     <script>
@@ -139,6 +147,15 @@
 
       document.getElementById('modeTokens').addEventListener('change', () => save({ mode: 'tokens' }));
       document.getElementById('modeMrr').addEventListener('change', () => save({ mode: 'mrr' }));
+
+      document.getElementById('resetPet').addEventListener('click', async () => {
+        const confirmed = window.confirm(
+          'Reset the beaver to level 1 (baby)? Growth settings and API keys are kept. Past token usage will not be counted again.',
+        );
+        if (!confirmed) return;
+        const result = await api.resetPet();
+        setStatus(result && result.ok ? 'beaver reset to level 1' : `error: ${result && result.error}`);
+      });
 
       refresh();
     </script>
