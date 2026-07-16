@@ -7,6 +7,7 @@ import { createPauseState, isPaused, setSystemPause, toggleManualPause, type Pau
 import { createTray, formatPetLabel } from './tray';
 import { XpEngine, type PetUpdate } from './xp/engine';
 import { UsageTracker } from './usage/tracker';
+import { todayTotalTokens } from './usage/totals';
 import { createDetectorState, detectEvents } from './quips/detectors';
 import { QUIP_DISPLAY_DURATION_MS } from './quips/quip-config';
 import { QUIP_POOLS, type QuipTrigger } from './quips/quips';
@@ -267,12 +268,17 @@ app.whenReady().then(() => {
   usageTracker.start();
   xpEngine.attachTracker(usageTracker);
 
-  // codingSession/tokenSpike/idle detection rides the tracker's own refresh
+  // codingSession/spend-tier/idle detection rides the tracker's own refresh
   // cadence via onTick (fires whether usage changed or not — idle detection
   // needs the zero-delta ticks too) rather than a second polling loop.
   let detectorState = createDetectorState();
   usageTracker.onTick((totals) => {
-    const result = detectEvents(detectorState, { nowMs: Date.now(), lifetimeTokens: totals.lifetime.totalTokens });
+    const nowMs = Date.now();
+    const result = detectEvents(detectorState, {
+      nowMs,
+      lifetimeTokens: totals.lifetime.totalTokens,
+      todayTokens: todayTotalTokens(totals, nowMs),
+    });
     detectorState = result.state;
     for (const event of result.events) fireQuip(event);
   });

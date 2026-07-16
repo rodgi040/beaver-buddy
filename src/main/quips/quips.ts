@@ -4,7 +4,14 @@
 // entries may contain a single `{stage}` placeholder that scheduler.ts fills
 // in with the pet's new stage name.
 
-export type QuipTrigger = 'appStart' | 'codingSession' | 'tokenSpike' | 'idle' | 'evolution';
+export type QuipTrigger =
+  | 'appStart'
+  | 'codingSession'
+  | 'spendWeak'
+  | 'spendOk'
+  | 'spendCrazy'
+  | 'idle'
+  | 'evolution';
 
 export const APP_START_QUIPS: readonly string[] = [
   'Back already? I was mid-nap.',
@@ -22,7 +29,23 @@ export const CODING_SESSION_QUIPS: readonly string[] = [
   'This is a proper work session. I approve.',
 ];
 
-export const TOKEN_SPIKE_QUIPS: readonly string[] = [
+export const SPEND_WEAK_QUIPS: readonly string[] = [
+  'Barely a token. Playing it cool today.',
+  'Light work. I respect the restraint.',
+  'Sipping tokens, not gulping. Fine by me.',
+  'Casual pace. The dam can wait.',
+  'Token trickle. Very zen of you.',
+];
+
+export const SPEND_OK_QUIPS: readonly string[] = [
+  'Steady burn. This is the good stuff.',
+  'Solid pace, nothing reckless. I like it.',
+  'Comfortable cruising speed. Keep it up.',
+  'Tokens moving at a reasonable clip.',
+  'Nice and steady. Very sustainable, this.',
+];
+
+export const SPEND_CRAZY_QUIPS: readonly string[] = [
   "You're burning tokens like crazy — nice.",
   'Whoa, token furnace. Feed it.',
   "That's a lot of tokens. Also, a lot of context.",
@@ -49,7 +72,9 @@ export const EVOLUTION_QUIPS: readonly string[] = [
 export const QUIP_POOLS: Readonly<Record<QuipTrigger, readonly string[]>> = {
   appStart: APP_START_QUIPS,
   codingSession: CODING_SESSION_QUIPS,
-  tokenSpike: TOKEN_SPIKE_QUIPS,
+  spendWeak: SPEND_WEAK_QUIPS,
+  spendOk: SPEND_OK_QUIPS,
+  spendCrazy: SPEND_CRAZY_QUIPS,
   idle: IDLE_QUIPS,
   evolution: EVOLUTION_QUIPS,
 };
