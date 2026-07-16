@@ -17,3 +17,6 @@ export const SETTINGS_READ_STATUS_CHANNEL = 'settings:read-status';
 export const SETTINGS_DISCONNECT_CHANNEL = 'settings:disconnect';
 // Settings-window-only: wipe pet XP back to level 1 / baby (token cursor kept).
 export const SETTINGS_RESET_PET_CHANNEL = 'settings:reset-pet';
+// Settings-window-only: re-scan local Claude Code / Codex usage logs
+// (booleans only — never paths). "Connect" = detect logs on this Mac.
+export const SETTINGS_CONNECT_USAGE_CHANNEL = 'settings:connect-usage';

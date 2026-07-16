@@ -7,6 +7,7 @@ import { createPauseState, isPaused, setSystemPause, toggleManualPause, type Pau
 import { createTray, formatPetLabel } from './tray';
 import { XpEngine, type PetUpdate } from './xp/engine';
 import { UsageTracker } from './usage/tracker';
+import { todayTotalTokens } from './usage/totals';
 import { createDetectorState, detectEvents } from './quips/detectors';
 import { QUIP_DISPLAY_DURATION_MS } from './quips/quip-config';
 import { QUIP_POOLS, type QuipTrigger } from './quips/quips';
@@ -198,9 +199,14 @@ app.whenReady().then(() => {
   mrrEngine.start();
 
   // Named (not inline) so the QA-only --open-growth-settings flag below can
-  // invoke the exact same code path the tray's "Growth settings…" click
-  // does — a native tray menu item can't be clicked via CDP, so a
+  // invoke the exact same code path the tray's Connect… / Settings… clicks
+  // do — a native tray menu item can't be clicked via CDP, so a
   // scriptable flag is the only way to drive it, same family as --quip.
+  // usageTracker is assigned below; getUsageSources reads the live ref.
+  let usageTracker: UsageTracker | null = null;
+  function applyUsageEnabled(next: SettingsState): void {
+    usageTracker?.setEnabledSources({ claude: next.claudeEnabled, codex: next.codexEnabled });
+  }
   function openGrowthSettings(): void {
     openSettingsWindow({
       stateDir,
@@ -209,6 +215,7 @@ app.whenReady().then(() => {
       onSettingsChanged: (next) => {
         growthSettings = next;
         xpEngine.setMode(growthSettings.mode);
+        applyUsageEnabled(growthSettings);
         tray.refresh();
         if (growthSettings.mode === 'mrr' && mrrPollNowOnModeSwitch) void mrrEngine.pollNow();
       },
@@ -218,6 +225,18 @@ app.whenReady().then(() => {
         mainWindow?.webContents.send(HATCH_START_CHANNEL);
         saveOnboardingState(stateDir, { hatched: true });
         xpEngine.resetProgress();
+      },
+      getUsageSources: () => {
+        usageTracker?.refresh();
+        return (
+          usageTracker?.getSourcesSnapshot() ?? {
+            claude: { enabled: false, logsFound: false, connected: false, lifetimeTokens: 0, todayTokens: 0 },
+            codex: { enabled: false, logsFound: false, connected: false, lifetimeTokens: 0, todayTokens: 0 },
+          }
+        );
+      },
+      onUsageEnabledChanged: ({ claudeEnabled, codexEnabled }) => {
+        usageTracker?.setEnabledSources({ claude: claudeEnabled, codex: codexEnabled });
       },
     });
   }
@@ -241,12 +260,12 @@ app.whenReady().then(() => {
         if (mode === 'mrr' && mrrPollNowOnModeSwitch) void mrrEngine.pollNow();
       },
       onOpenGrowthSettings: openGrowthSettings,
+      onOpenConnect: openGrowthSettings,
     },
     debugTrayMenu ? (labels) => process.stdout.write(`TRAY_MENU: ${JSON.stringify(labels)}\n`) : undefined,
   );
 
   if (process.argv.includes('--open-growth-settings')) openGrowthSettings();
-
   // Registered before any accrual (--inject-xp, tracker attach) so every
   // update — including a launch-time stage crossing — flows through here
   // and lands in the engine's getLastUpdate() for the resend below.
@@ -263,16 +282,26 @@ app.whenReady().then(() => {
     xpEngine.injectXp(injectXpAmount);
   }
 
-  const usageTracker = new UsageTracker();
-  usageTracker.start();
-  xpEngine.attachTracker(usageTracker);
+  const usageTrackerInstance = new UsageTracker();
+  usageTracker = usageTrackerInstance;
+  usageTrackerInstance.setEnabledSources({
+    claude: growthSettings.claudeEnabled,
+    codex: growthSettings.codexEnabled,
+  });
+  usageTrackerInstance.start();
+  xpEngine.attachTracker(usageTrackerInstance);
 
-  // codingSession/tokenSpike/idle detection rides the tracker's own refresh
+  // codingSession/spend-tier/idle detection rides the tracker's own refresh
   // cadence via onTick (fires whether usage changed or not — idle detection
   // needs the zero-delta ticks too) rather than a second polling loop.
   let detectorState = createDetectorState();
-  usageTracker.onTick((totals) => {
-    const result = detectEvents(detectorState, { nowMs: Date.now(), lifetimeTokens: totals.lifetime.totalTokens });
+  usageTrackerInstance.onTick((totals) => {
+    const nowMs = Date.now();
+    const result = detectEvents(detectorState, {
+      nowMs,
+      lifetimeTokens: totals.lifetime.totalTokens,
+      todayTokens: todayTotalTokens(totals, nowMs),
+    });
     detectorState = result.state;
     for (const event of result.events) fireQuip(event);
   });
