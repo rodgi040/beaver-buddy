@@ -8,8 +8,9 @@
 // nothing changed (that's the definition of idle), so it rides onTick
 // instead of a second polling loop.
 //
-// Claude Code / Codex only contribute to XP totals after the user opts in
-// (setEnabledSources). Logs may still be scanned for per-source status.
+// Claude Code / Codex logs are discovered (directory listing only) before
+// opt-in so Connect UI can show "logs found". File contents are parsed only
+// after setEnabledSources enables that source — never before.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -156,11 +157,18 @@ export class UsageTracker {
       sink.push(...(this.fileCache.get(filePath)?.entries ?? []));
     };
 
-    for (const filePath of claudeFiles) processFile(filePath, parseClaudeFile, claudeEntries);
-    for (const filePath of codexFiles) processFile(filePath, parseCodexFile, codexEntries);
+    // Parse only opted-in sources. Disabled sources contribute logsFound via
+    // discovery alone; their cache entries fall out of liveFiles and evict.
+    if (this.enabled.claude) {
+      for (const filePath of claudeFiles) processFile(filePath, parseClaudeFile, claudeEntries);
+    }
+    if (this.enabled.codex) {
+      for (const filePath of codexFiles) processFile(filePath, parseCodexFile, codexEntries);
+    }
 
-    // Drop cache entries for files that no longer show up in discovery
-    // (rotated/deleted logs) so they stop contributing to totals.
+    // Drop cache entries for files that no longer show up among enabled
+    // sources (rotated/deleted logs, or user disconnected) so they stop
+    // contributing to totals and are not re-read while disabled.
     for (const cachedPath of this.fileCache.keys()) {
       if (!liveFiles.has(cachedPath)) {
         this.fileCache.delete(cachedPath);
@@ -176,8 +184,6 @@ export class UsageTracker {
       changed = true;
     }
 
-    // Always keep per-source aggregates current (for the Connect UI), but
-    // only fold enabled sources into the XP-facing totals.
     const nextClaudeTotals = aggregate(claudeEntries);
     const nextCodexTotals = aggregate(dedupeCodexEntries(codexEntries));
     const combined: UsageEntry[] = [];

@@ -115,6 +115,23 @@ describe('UsageTracker', () => {
     });
   });
 
+  it('does not read log file contents until the user opts in', () => {
+    writeClaudeSession(home, 'project-a', 'session-1', { input: 10, output: 5 });
+    const openSpy = vi.spyOn(fs, 'openSync');
+    const tracker = new UsageTracker({}, home);
+    tracker.refresh();
+
+    const jsonlOpens = () =>
+      openSpy.mock.calls.filter(([p]) => String(p).includes('.jsonl'));
+    expect(jsonlOpens()).toEqual([]);
+    expect(tracker.getSourcesSnapshot().claude.logsFound).toBe(true);
+
+    tracker.setEnabledSources({ claude: true, codex: false });
+    expect(jsonlOpens().length).toBeGreaterThan(0);
+    expect(tracker.getTotals().lifetime.totalTokens).toBe(15);
+    openSpy.mockRestore();
+  });
+
   it('coalesces refreshes onto a single timer interval (fake timers)', () => {
     vi.useFakeTimers();
     const tracker = new UsageTracker({}, home);
