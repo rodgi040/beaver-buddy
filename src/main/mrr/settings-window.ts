@@ -10,15 +10,33 @@ import path from 'node:path';
 import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron';
 import { applyWindowHardening } from '../hardening';
 import {
+  SETTINGS_CONNECT_USAGE_CHANNEL,
   SETTINGS_DISCONNECT_CHANNEL,
   SETTINGS_READ_STATUS_CHANNEL,
   SETTINGS_RESET_PET_CHANNEL,
   SETTINGS_SAVE_CHANNEL,
 } from '../ipc-channels';
+import { discoverPaths } from '../usage/paths';
 import { deleteKeychainSecret, setKeychainSecret } from './keychain';
 import { REVENUECAT_KEY_ACCOUNT, REVENUECAT_PROJECT_ACCOUNT, STRIPE_KEY_ACCOUNT } from './mrr-config';
 import { saveSettingsState, type Mode, type SettingsState } from './settings-store';
-import { isValidationError, validateDisconnectInput, validateSaveInput } from './settings-validate';
+import {
+  isValidationError,
+  validateConnectUsageInput,
+  validateDisconnectInput,
+  validateSaveInput,
+} from './settings-validate';
+
+export interface UsageSourceStatus {
+  readonly claudeConnected: boolean;
+  readonly codexConnected: boolean;
+}
+
+// Booleans only — never paths (CLAUDE.md: renderer never sees raw paths).
+export function detectUsageSources(): UsageSourceStatus {
+  const { claudeFiles, codexFiles } = discoverPaths();
+  return { claudeConnected: claudeFiles.length > 0, codexConnected: codexFiles.length > 0 };
+}
 
 export interface SettingsWindowDeps {
   readonly stateDir: string;
@@ -27,6 +45,8 @@ export interface SettingsWindowDeps {
   readonly onSettingsChanged: (next: SettingsState) => void;
   // Wipes pet XP to level 1 / baby and replays hatch — growth keys/mode untouched.
   readonly onPetReset: () => void;
+  // Re-scan local Claude Code / Codex logs and refresh the usage tracker.
+  readonly onRefreshUsage: () => UsageSourceStatus;
 }
 
 let settingsWindow: BrowserWindow | null = null;
@@ -53,6 +73,7 @@ export interface SettingsHandlers {
   save(event: IpcMainInvokeEvent, payload: unknown): Promise<unknown>;
   disconnect(event: IpcMainInvokeEvent, payload: unknown): Promise<unknown>;
   resetPet(event: IpcMainInvokeEvent): unknown;
+  connectUsage(event: IpcMainInvokeEvent, payload: unknown): unknown;
 }
 
 // Handler bodies are Electron-free (validate + keychain + settings store +
@@ -66,7 +87,14 @@ export function createSettingsHandlers(
     readStatus(event) {
       if (!isAuthorized(event)) return { error: 'unauthorized' };
       const s = deps.getSettings();
-      return { stripeConnected: s.stripeConnected, revenuecatConnected: s.revenuecatConnected, mode: s.mode };
+      const usage = deps.onRefreshUsage();
+      return {
+        stripeConnected: s.stripeConnected,
+        revenuecatConnected: s.revenuecatConnected,
+        mode: s.mode,
+        claudeConnected: usage.claudeConnected,
+        codexConnected: usage.codexConnected,
+      };
     },
 
     async save(event, payload) {
@@ -133,6 +161,21 @@ export function createSettingsHandlers(
       deps.onPetReset();
       return { ok: true };
     },
+
+    connectUsage(event, payload) {
+      if (!isAuthorized(event)) return { ok: false, error: 'unauthorized' };
+      const parsed = validateConnectUsageInput(payload);
+      if (isValidationError(parsed)) return { ok: false, error: parsed.error };
+      const usage = deps.onRefreshUsage();
+      const connected = parsed.target === 'claude' ? usage.claudeConnected : usage.codexConnected;
+      return {
+        ok: true,
+        target: parsed.target,
+        connected,
+        claudeConnected: usage.claudeConnected,
+        codexConnected: usage.codexConnected,
+      };
+    },
   };
 }
 
@@ -145,6 +188,7 @@ function registerHandlers(deps: SettingsWindowDeps): void {
   ipcMain.handle(SETTINGS_SAVE_CHANNEL, (event, payload: unknown) => handlers.save(event, payload));
   ipcMain.handle(SETTINGS_DISCONNECT_CHANNEL, (event, payload: unknown) => handlers.disconnect(event, payload));
   ipcMain.handle(SETTINGS_RESET_PET_CHANNEL, (event) => handlers.resetPet(event));
+  ipcMain.handle(SETTINGS_CONNECT_USAGE_CHANNEL, (event, payload: unknown) => handlers.connectUsage(event, payload));
 }
 
 export function openSettingsWindow(deps: SettingsWindowDeps): void {
@@ -157,9 +201,9 @@ export function openSettingsWindow(deps: SettingsWindowDeps): void {
 
   const win = new BrowserWindow({
     width: 420,
-    height: 560,
+    height: 640,
     resizable: false,
-    title: 'Beaver Buddy — Growth Settings',
+    title: 'Beaver Buddy — Settings',
     icon: path.join(app.getAppPath(), 'assets', 'beaver-buddy-icon.png'),
     webPreferences: {
       contextIsolation: true,

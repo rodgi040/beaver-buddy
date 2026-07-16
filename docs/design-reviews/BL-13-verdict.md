@@ -64,6 +64,13 @@ npm start -- --quip spendOk
 npm start -- --quip spendCrazy
 ```
 
+## Settings: Connect (Claude Code / Codex)
+
+Tray → Growth → **Settings…** opens a window with a **Connect** section:
+**Connect Claude Code** and **Connect Codex**. These re-scan local usage
+logs (no API keys). Status shows `connected` or `not found` — paths never
+reach the renderer.
+
 ## Supersedes
 
 BL-8's `tokenSpike` pool and `TOKEN_SPIKE_RATE_PER_MIN` detector path. The

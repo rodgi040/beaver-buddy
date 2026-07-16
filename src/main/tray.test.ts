@@ -95,9 +95,9 @@ describe('buildMenuTemplate: growth submenu', () => {
     expect(submenu.find((i) => i.label === 'Source: Tokens')).toMatchObject({ checked: false });
   });
 
-  it('always includes a Growth settings… item', () => {
+  it('always includes a Settings… item', () => {
     const submenu = growthSubmenu(buildMenuTemplate(callbacks(), () => {}));
-    expect(submenu.some((i) => i.label === 'Growth settings…')).toBe(true);
+    expect(submenu.some((i) => i.label === 'Settings…')).toBe(true);
   });
 
   it('mode click calls onSelectGrowthMode then rebuild', () => {
@@ -114,7 +114,7 @@ describe('buildMenuTemplate: growth submenu', () => {
     const submenu = growthSubmenu(
       buildMenuTemplate(callbacks({ onOpenGrowthSettings: () => calls.push('open') }), () => {}),
     );
-    submenu.find((i) => i.label === 'Growth settings…')?.click?.(undefined as never, undefined as never, undefined as never);
+    submenu.find((i) => i.label === 'Settings…')?.click?.(undefined as never, undefined as never, undefined as never);
     expect(calls).toEqual(['open']);
   });
 });

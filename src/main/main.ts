@@ -17,7 +17,7 @@ import { isValidKeychainService } from './mrr/keychain';
 import { DEFAULT_KEYCHAIN_SERVICE } from './mrr/mrr-config';
 import { MrrEngine } from './mrr/mrr-engine';
 import { loadSettingsState, saveSettingsState, type SettingsState } from './mrr/settings-store';
-import { openSettingsWindow } from './mrr/settings-window';
+import { detectUsageSources, openSettingsWindow } from './mrr/settings-window';
 import { setUnpackagedDockIcon } from './app-icon';
 
 const SMOKE_DELAY_MS = 3000;
@@ -199,9 +199,11 @@ app.whenReady().then(() => {
   mrrEngine.start();
 
   // Named (not inline) so the QA-only --open-growth-settings flag below can
-  // invoke the exact same code path the tray's "Growth settings…" click
+  // invoke the exact same code path the tray's "Settings…" click
   // does — a native tray menu item can't be clicked via CDP, so a
   // scriptable flag is the only way to drive it, same family as --quip.
+  // usageTracker is assigned below; onRefreshUsage reads the live ref.
+  let usageTracker: UsageTracker | null = null;
   function openGrowthSettings(): void {
     openSettingsWindow({
       stateDir,
@@ -219,6 +221,10 @@ app.whenReady().then(() => {
         mainWindow?.webContents.send(HATCH_START_CHANNEL);
         saveOnboardingState(stateDir, { hatched: true });
         xpEngine.resetProgress();
+      },
+      onRefreshUsage: () => {
+        usageTracker?.refresh();
+        return detectUsageSources();
       },
     });
   }
@@ -264,15 +270,16 @@ app.whenReady().then(() => {
     xpEngine.injectXp(injectXpAmount);
   }
 
-  const usageTracker = new UsageTracker();
-  usageTracker.start();
-  xpEngine.attachTracker(usageTracker);
+  const usageTrackerInstance = new UsageTracker();
+  usageTracker = usageTrackerInstance;
+  usageTrackerInstance.start();
+  xpEngine.attachTracker(usageTrackerInstance);
 
   // codingSession/spend-tier/idle detection rides the tracker's own refresh
   // cadence via onTick (fires whether usage changed or not — idle detection
   // needs the zero-delta ticks too) rather than a second polling loop.
   let detectorState = createDetectorState();
-  usageTracker.onTick((totals) => {
+  usageTrackerInstance.onTick((totals) => {
     const nowMs = Date.now();
     const result = detectEvents(detectorState, {
       nowMs,

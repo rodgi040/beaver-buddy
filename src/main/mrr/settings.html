@@ -9,7 +9,7 @@
       http-equiv="Content-Security-Policy"
       content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'"
     />
-    <title>Growth settings</title>
+    <title>Settings</title>
     <style>
       body {
         font: 13px -apple-system, sans-serif;
@@ -35,6 +35,11 @@
         gap: 8px;
         align-items: center;
       }
+      .hint {
+        margin: 0 0 8px;
+        font-size: 12px;
+        color: #555;
+      }
       #status {
         margin-top: 10px;
         min-height: 16px;
@@ -46,6 +51,22 @@
     </style>
   </head>
   <body>
+    <fieldset>
+      <legend>Connect</legend>
+      <p class="hint">
+        Reads local Claude Code / Codex usage logs on this Mac — no API keys.
+        Connected means logs were found.
+      </p>
+      <div class="row" style="margin-top: 8px">
+        <button id="connectClaude" type="button">Connect Claude Code</button>
+        <span id="claudeStatus"></span>
+      </div>
+      <div class="row" style="margin-top: 8px">
+        <button id="connectCodex" type="button">Connect Codex</button>
+        <span id="codexStatus"></span>
+      </div>
+    </fieldset>
+
     <fieldset>
       <legend>Stripe</legend>
       <label for="stripeKey">Secret key</label>
@@ -78,7 +99,7 @@
 
     <fieldset>
       <legend>Pet</legend>
-      <p style="margin: 0 0 8px; font-size: 12px; color: #555">
+      <p class="hint">
         Reset XP to level 1 (baby). Past token usage is not re-counted; only new activity earns XP again.
       </p>
       <button id="resetPet" type="button">Reset beaver…</button>
@@ -96,6 +117,11 @@
         document.getElementById('status').textContent = text;
       }
 
+      function setUsageStatus(status) {
+        document.getElementById('claudeStatus').textContent = status.claudeConnected ? 'connected' : 'not found';
+        document.getElementById('codexStatus').textContent = status.codexConnected ? 'connected' : 'not found';
+      }
+
       async function refresh() {
         const status = await api.readStatus();
         if (status && status.error) {
@@ -104,6 +130,7 @@
         }
         document.getElementById('stripeStatus').textContent = status.stripeConnected ? 'connected' : 'not connected';
         document.getElementById('revenuecatStatus').textContent = status.revenuecatConnected ? 'connected' : 'not connected';
+        setUsageStatus(status);
         const mrrAvailable = status.stripeConnected || status.revenuecatConnected;
         const mrrRadio = document.getElementById('modeMrr');
         mrrRadio.disabled = !mrrAvailable;
@@ -116,6 +143,20 @@
         setStatus(result && result.ok ? 'saved' : `error: ${result && result.error}`);
         await refresh();
       }
+
+      async function connectUsage(target) {
+        const result = await api.connectUsage(target);
+        if (!result || !result.ok) {
+          setStatus(`error: ${result && result.error}`);
+          return;
+        }
+        setUsageStatus(result);
+        const label = target === 'claude' ? 'Claude Code' : 'Codex';
+        setStatus(result.connected ? `${label} connected` : `${label} not found — use it on this Mac so logs appear`);
+      }
+
+      document.getElementById('connectClaude').addEventListener('click', () => connectUsage('claude'));
+      document.getElementById('connectCodex').addEventListener('click', () => connectUsage('codex'));
 
       document.getElementById('saveStripe').addEventListener('click', () => {
         const stripeKey = document.getElementById('stripeKey').value;

@@ -48,7 +48,7 @@ export function buildMenuTemplate(callbacks: TrayCallbacks, rebuild: () => void)
       },
     });
   }
-  growthSubmenu.push({ type: 'separator' }, { label: 'Growth settings…', click: () => callbacks.onOpenGrowthSettings() });
+  growthSubmenu.push({ type: 'separator' }, { label: 'Settings…', click: () => callbacks.onOpenGrowthSettings() });
 
   return [
     { label: callbacks.getPetLabel(), enabled: false },

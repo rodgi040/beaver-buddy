@@ -68,6 +68,7 @@ describe('createSettingsHandlers', () => {
       onPetReset: () => {
         petResets += 1;
       },
+      onRefreshUsage: () => ({ claudeConnected: false, codexConnected: true }),
     };
   }
 
@@ -88,15 +89,47 @@ describe('createSettingsHandlers', () => {
     await expect(handlers.save(fakeEvent, { stripeKey: 'rk_fake' })).resolves.toEqual({ ok: false, error: 'unauthorized' });
     await expect(handlers.disconnect(fakeEvent, { target: 'stripe' })).resolves.toEqual({ ok: false, error: 'unauthorized' });
     expect(handlers.resetPet(fakeEvent)).toEqual({ ok: false, error: 'unauthorized' });
+    expect(handlers.connectUsage(fakeEvent, { target: 'claude' })).toEqual({ ok: false, error: 'unauthorized' });
     expect(changed).toHaveLength(0);
     expect(petResets).toBe(0);
   });
 
-  it('readStatus returns only the three booleans/mode fields', () => {
+  it('readStatus returns growth fields plus usage-source booleans', () => {
     const handlers = createSettingsHandlers(deps(), () => true);
-    expect(handlers.readStatus(fakeEvent)).toEqual({ stripeConnected: false, revenuecatConnected: false, mode: 'tokens' });
+    expect(handlers.readStatus(fakeEvent)).toEqual({
+      stripeConnected: false,
+      revenuecatConnected: false,
+      mode: 'tokens',
+      claudeConnected: false,
+      codexConnected: true,
+    });
   });
 
+  it('connectUsage re-scans and reports connected for the requested target', () => {
+    const handlers = createSettingsHandlers(deps(), () => true);
+    expect(handlers.connectUsage(fakeEvent, { target: 'codex' })).toEqual({
+      ok: true,
+      target: 'codex',
+      connected: true,
+      claudeConnected: false,
+      codexConnected: true,
+    });
+    expect(handlers.connectUsage(fakeEvent, { target: 'claude' })).toEqual({
+      ok: true,
+      target: 'claude',
+      connected: false,
+      claudeConnected: false,
+      codexConnected: true,
+    });
+  });
+
+  it('connectUsage rejects an invalid target', () => {
+    const handlers = createSettingsHandlers(deps(), () => true);
+    expect(handlers.connectUsage(fakeEvent, { target: 'stripe' })).toEqual({
+      ok: false,
+      error: 'target must be "claude" or "codex"',
+    });
+  });
   it('save with a key connects the source and persists', async () => {
     const handlers = createSettingsHandlers(deps(), () => true);
     await expect(handlers.save(fakeEvent, { stripeKey: 'rk_fake' })).resolves.toEqual({ ok: true });

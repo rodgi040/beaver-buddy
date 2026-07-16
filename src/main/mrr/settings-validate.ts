@@ -73,3 +73,18 @@ export function validateDisconnectInput(input: unknown): ValidatedDisconnect | V
   if (target !== 'stripe' && target !== 'revenuecat') return { error: 'target must be "stripe" or "revenuecat"' };
   return { target };
 }
+
+export interface ValidatedConnectUsage {
+  readonly target: 'claude' | 'codex';
+}
+
+export function validateConnectUsageInput(input: unknown): ValidatedConnectUsage | ValidationError {
+  if (typeof input !== 'object' || input === null) return { error: 'payload must be an object' };
+  const obj = input as Record<string, unknown>;
+  for (const key of Object.keys(obj)) {
+    if (key !== 'target') return { error: `unexpected field: ${key}` };
+  }
+  const target = obj.target;
+  if (target !== 'claude' && target !== 'codex') return { error: 'target must be "claude" or "codex"' };
+  return { target };
+}
