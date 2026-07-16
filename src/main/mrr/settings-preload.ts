@@ -25,7 +25,7 @@ export interface SaveSettingsPayload {
 contextBridge.exposeInMainWorld('beaverBuddySettings', {
   save: (payload: SaveSettingsPayload): Promise<unknown> => ipcRenderer.invoke(SETTINGS_SAVE_CHANNEL, payload),
   readStatus: (): Promise<unknown> => ipcRenderer.invoke(SETTINGS_READ_STATUS_CHANNEL),
-  disconnect: (target: 'stripe' | 'revenuecat'): Promise<unknown> =>
+  disconnect: (target: 'stripe' | 'revenuecat' | 'claude' | 'codex'): Promise<unknown> =>
     ipcRenderer.invoke(SETTINGS_DISCONNECT_CHANNEL, { target }),
   resetPet: (): Promise<unknown> => ipcRenderer.invoke(SETTINGS_RESET_PET_CHANNEL),
   connectUsage: (target: 'claude' | 'codex'): Promise<unknown> =>

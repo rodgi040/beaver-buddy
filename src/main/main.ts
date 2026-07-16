@@ -17,7 +17,7 @@ import { isValidKeychainService } from './mrr/keychain';
 import { DEFAULT_KEYCHAIN_SERVICE } from './mrr/mrr-config';
 import { MrrEngine } from './mrr/mrr-engine';
 import { loadSettingsState, saveSettingsState, type SettingsState } from './mrr/settings-store';
-import { detectUsageSources, openSettingsWindow } from './mrr/settings-window';
+import { openSettingsWindow } from './mrr/settings-window';
 import { setUnpackagedDockIcon } from './app-icon';
 
 const SMOKE_DELAY_MS = 3000;
@@ -199,11 +199,14 @@ app.whenReady().then(() => {
   mrrEngine.start();
 
   // Named (not inline) so the QA-only --open-growth-settings flag below can
-  // invoke the exact same code path the tray's "Settings…" click
-  // does — a native tray menu item can't be clicked via CDP, so a
+  // invoke the exact same code path the tray's Connect… / Settings… clicks
+  // do — a native tray menu item can't be clicked via CDP, so a
   // scriptable flag is the only way to drive it, same family as --quip.
-  // usageTracker is assigned below; onRefreshUsage reads the live ref.
+  // usageTracker is assigned below; getUsageSources reads the live ref.
   let usageTracker: UsageTracker | null = null;
+  function applyUsageEnabled(next: SettingsState): void {
+    usageTracker?.setEnabledSources({ claude: next.claudeEnabled, codex: next.codexEnabled });
+  }
   function openGrowthSettings(): void {
     openSettingsWindow({
       stateDir,
@@ -212,6 +215,7 @@ app.whenReady().then(() => {
       onSettingsChanged: (next) => {
         growthSettings = next;
         xpEngine.setMode(growthSettings.mode);
+        applyUsageEnabled(growthSettings);
         tray.refresh();
         if (growthSettings.mode === 'mrr' && mrrPollNowOnModeSwitch) void mrrEngine.pollNow();
       },
@@ -222,9 +226,17 @@ app.whenReady().then(() => {
         saveOnboardingState(stateDir, { hatched: true });
         xpEngine.resetProgress();
       },
-      onRefreshUsage: () => {
+      getUsageSources: () => {
         usageTracker?.refresh();
-        return detectUsageSources();
+        return (
+          usageTracker?.getSourcesSnapshot() ?? {
+            claude: { enabled: false, logsFound: false, connected: false, lifetimeTokens: 0, todayTokens: 0 },
+            codex: { enabled: false, logsFound: false, connected: false, lifetimeTokens: 0, todayTokens: 0 },
+          }
+        );
+      },
+      onUsageEnabledChanged: ({ claudeEnabled, codexEnabled }) => {
+        usageTracker?.setEnabledSources({ claude: claudeEnabled, codex: codexEnabled });
       },
     });
   }
@@ -248,17 +260,12 @@ app.whenReady().then(() => {
         if (mode === 'mrr' && mrrPollNowOnModeSwitch) void mrrEngine.pollNow();
       },
       onOpenGrowthSettings: openGrowthSettings,
-      getUsageSources: () => detectUsageSources(),
-      onConnectUsage: () => {
-        usageTracker?.refresh();
-        // Status is re-read on rebuild via getUsageSources — no paths exposed.
-      },
+      onOpenConnect: openGrowthSettings,
     },
     debugTrayMenu ? (labels) => process.stdout.write(`TRAY_MENU: ${JSON.stringify(labels)}\n`) : undefined,
   );
 
   if (process.argv.includes('--open-growth-settings')) openGrowthSettings();
-
   // Registered before any accrual (--inject-xp, tracker attach) so every
   // update — including a launch-time stage crossing — flows through here
   // and lands in the engine's getLastUpdate() for the resend below.
@@ -277,6 +284,10 @@ app.whenReady().then(() => {
 
   const usageTrackerInstance = new UsageTracker();
   usageTracker = usageTrackerInstance;
+  usageTrackerInstance.setEnabledSources({
+    claude: growthSettings.claudeEnabled,
+    codex: growthSettings.codexEnabled,
+  });
   usageTrackerInstance.start();
   xpEngine.attachTracker(usageTrackerInstance);
 

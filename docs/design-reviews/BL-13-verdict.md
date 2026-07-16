@@ -66,10 +66,10 @@ npm start -- --quip spendCrazy
 
 ## Settings: Connect (Claude Code / Codex)
 
-Tray → Growth → **Settings…** opens a window with a **Connect** section:
-**Connect Claude Code** and **Connect Codex**. These re-scan local usage
-logs (no API keys). Status shows `connected` or `not found` — paths never
-reach the renderer.
+Tray → **Connect…** opens the same Settings window as Growth → Settings….
+Claude Code / Codex are **opt-in**: nothing is connected until you click
+Connect (local logs alone never auto-connect). When connected, the UI shows
+today + lifetime token counts per source. Disconnect opts out again.
 
 ## Supersedes
 

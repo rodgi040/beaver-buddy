@@ -16,7 +16,7 @@ import {
   SETTINGS_RESET_PET_CHANNEL,
   SETTINGS_SAVE_CHANNEL,
 } from '../ipc-channels';
-import { discoverPaths } from '../usage/paths';
+import type { UsageSourcesSnapshot } from '../usage/tracker';
 import { deleteKeychainSecret, setKeychainSecret } from './keychain';
 import { REVENUECAT_KEY_ACCOUNT, REVENUECAT_PROJECT_ACCOUNT, STRIPE_KEY_ACCOUNT } from './mrr-config';
 import { saveSettingsState, type Mode, type SettingsState } from './settings-store';
@@ -27,17 +27,6 @@ import {
   validateSaveInput,
 } from './settings-validate';
 
-export interface UsageSourceStatus {
-  readonly claudeConnected: boolean;
-  readonly codexConnected: boolean;
-}
-
-// Booleans only — never paths (CLAUDE.md: renderer never sees raw paths).
-export function detectUsageSources(): UsageSourceStatus {
-  const { claudeFiles, codexFiles } = discoverPaths();
-  return { claudeConnected: claudeFiles.length > 0, codexConnected: codexFiles.length > 0 };
-}
-
 export interface SettingsWindowDeps {
   readonly stateDir: string;
   readonly keychainService: string;
@@ -45,8 +34,9 @@ export interface SettingsWindowDeps {
   readonly onSettingsChanged: (next: SettingsState) => void;
   // Wipes pet XP to level 1 / baby and replays hatch — growth keys/mode untouched.
   readonly onPetReset: () => void;
-  // Re-scan local Claude Code / Codex logs and refresh the usage tracker.
-  readonly onRefreshUsage: () => UsageSourceStatus;
+  // Re-scan logs + return per-source status (enabled is opt-in; tokens only when enabled).
+  readonly getUsageSources: () => UsageSourcesSnapshot;
+  readonly onUsageEnabledChanged: (next: { claudeEnabled: boolean; codexEnabled: boolean }) => void;
 }
 
 let settingsWindow: BrowserWindow | null = null;
@@ -76,6 +66,25 @@ export interface SettingsHandlers {
   connectUsage(event: IpcMainInvokeEvent, payload: unknown): unknown;
 }
 
+function usagePayload(usage: UsageSourcesSnapshot) {
+  return {
+    claude: {
+      enabled: usage.claude.enabled,
+      connected: usage.claude.connected,
+      logsFound: usage.claude.logsFound,
+      lifetimeTokens: usage.claude.lifetimeTokens,
+      todayTokens: usage.claude.todayTokens,
+    },
+    codex: {
+      enabled: usage.codex.enabled,
+      connected: usage.codex.connected,
+      logsFound: usage.codex.logsFound,
+      lifetimeTokens: usage.codex.lifetimeTokens,
+      todayTokens: usage.codex.todayTokens,
+    },
+  };
+}
+
 // Handler bodies are Electron-free (validate + keychain + settings store +
 // deps only); the sender-frame check comes in as a predicate so tests can
 // exercise the unauthorized path without a BrowserWindow.
@@ -87,13 +96,11 @@ export function createSettingsHandlers(
     readStatus(event) {
       if (!isAuthorized(event)) return { error: 'unauthorized' };
       const s = deps.getSettings();
-      const usage = deps.onRefreshUsage();
       return {
         stripeConnected: s.stripeConnected,
         revenuecatConnected: s.revenuecatConnected,
         mode: s.mode,
-        claudeConnected: usage.claudeConnected,
-        codexConnected: usage.codexConnected,
+        ...usagePayload(deps.getUsageSources()),
       };
     },
 
@@ -121,7 +128,13 @@ export function createSettingsHandlers(
       }
 
       const mode = nextModeAfterSave(parsed.mode ?? current.mode, stripeConnected, revenuecatConnected);
-      const next: SettingsState = { mode, stripeConnected, revenuecatConnected };
+      const next: SettingsState = {
+        mode,
+        stripeConnected,
+        revenuecatConnected,
+        claudeEnabled: current.claudeEnabled,
+        codexEnabled: current.codexEnabled,
+      };
       saveSettingsState(deps.stateDir, next);
       deps.onSettingsChanged(next);
       return { ok: true };
@@ -133,6 +146,19 @@ export function createSettingsHandlers(
       if (isValidationError(parsed)) return { ok: false, error: parsed.error };
 
       const current = deps.getSettings();
+
+      if (parsed.target === 'claude' || parsed.target === 'codex') {
+        const next: SettingsState = {
+          ...current,
+          claudeEnabled: parsed.target === 'claude' ? false : current.claudeEnabled,
+          codexEnabled: parsed.target === 'codex' ? false : current.codexEnabled,
+        };
+        saveSettingsState(deps.stateDir, next);
+        deps.onSettingsChanged(next);
+        deps.onUsageEnabledChanged({ claudeEnabled: next.claudeEnabled, codexEnabled: next.codexEnabled });
+        return { ok: true, ...usagePayload(deps.getUsageSources()) };
+      }
+
       let stripeConnected = current.stripeConnected;
       let revenuecatConnected = current.revenuecatConnected;
 
@@ -150,7 +176,13 @@ export function createSettingsHandlers(
       }
 
       const mode = nextModeAfterDisconnect(current.mode, stripeConnected, revenuecatConnected);
-      const next: SettingsState = { mode, stripeConnected, revenuecatConnected };
+      const next: SettingsState = {
+        mode,
+        stripeConnected,
+        revenuecatConnected,
+        claudeEnabled: current.claudeEnabled,
+        codexEnabled: current.codexEnabled,
+      };
       saveSettingsState(deps.stateDir, next);
       deps.onSettingsChanged(next);
       return { ok: true };
@@ -166,14 +198,23 @@ export function createSettingsHandlers(
       if (!isAuthorized(event)) return { ok: false, error: 'unauthorized' };
       const parsed = validateConnectUsageInput(payload);
       if (isValidationError(parsed)) return { ok: false, error: parsed.error };
-      const usage = deps.onRefreshUsage();
-      const connected = parsed.target === 'claude' ? usage.claudeConnected : usage.codexConnected;
+
+      const current = deps.getSettings();
+      const next: SettingsState = {
+        ...current,
+        claudeEnabled: parsed.target === 'claude' ? true : current.claudeEnabled,
+        codexEnabled: parsed.target === 'codex' ? true : current.codexEnabled,
+      };
+      saveSettingsState(deps.stateDir, next);
+      deps.onSettingsChanged(next);
+      deps.onUsageEnabledChanged({ claudeEnabled: next.claudeEnabled, codexEnabled: next.codexEnabled });
+      const usage = deps.getUsageSources();
+      const source = parsed.target === 'claude' ? usage.claude : usage.codex;
       return {
         ok: true,
         target: parsed.target,
-        connected,
-        claudeConnected: usage.claudeConnected,
-        codexConnected: usage.codexConnected,
+        connected: source.connected,
+        ...usagePayload(usage),
       };
     },
   };
@@ -201,7 +242,7 @@ export function openSettingsWindow(deps: SettingsWindowDeps): void {
 
   const win = new BrowserWindow({
     width: 420,
-    height: 640,
+    height: 680,
     resizable: false,
     title: 'Beaver Buddy — Settings',
     icon: path.join(app.getAppPath(), 'assets', 'beaver-buddy-icon.png'),
