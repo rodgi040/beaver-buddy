@@ -147,6 +147,9 @@ usage logs.
   hatch/evolution animations (sandboxed, no Node access).
 - `assets/` — committed PNG sprite sheets + `STYLE.md` (palette/grid rules).
 - `scripts/gen-sprites/` — the asset-generation pipeline.
+- `tools/puppet-studio/` — dev-time PixiJS authoring studio (ADR 003): rigs
+  ComfyUI-generated parts and bakes app-compatible sprite sheets. Never shipped;
+  run with `npm run studio` (see `tools/puppet-studio/README.md`).
 
 ## Troubleshooting
 
