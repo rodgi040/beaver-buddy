@@ -16,3 +16,8 @@ assets-src/
 # Local /fp-new-projekt slash-command template files. Imported for local
 # scaffolding only; never committed.
 .fp-new-projekt/
+
+# Code-signing certificates never enter the repo; dev PFX files stay local,
+# CI certs live in GitHub Actions secrets (docs/code-signing.md).
+*.pfx
+*.p12
