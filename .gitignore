@@ -21,3 +21,8 @@ assets-src/
 # CI certs live in GitHub Actions secrets (docs/code-signing.md).
 *.pfx
 *.p12
+
+# Local agent instruction files (stay on disk, not committed).
+CLAUDE.md
+AGENTS.md
+agent.md
