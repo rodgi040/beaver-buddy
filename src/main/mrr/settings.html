@@ -76,6 +76,13 @@
       <label class="row"><input type="radio" name="mode" id="modeMrr" value="mrr" /> MRR</label>
     </fieldset>
 
+    <fieldset>
+      <legend>Reset</legend>
+      <div class="row">
+        <button id="resetProgress" type="button">Reset beaver (XP &amp; hatch)</button>
+      </div>
+    </fieldset>
+
     <div id="status"></div>
 
     <script>
@@ -139,6 +146,35 @@
 
       document.getElementById('modeTokens').addEventListener('change', () => save({ mode: 'tokens' }));
       document.getElementById('modeMrr').addEventListener('change', () => save({ mode: 'mrr' }));
+
+      // Two-click arming instead of confirm(): deterministic, and guaranteed
+      // available in the sandboxed renderer. First click arms the button for
+      // 5s; only a second click inside that window actually resets.
+      const resetButton = document.getElementById('resetProgress');
+      const RESET_LABEL = 'Reset beaver (XP & hatch)';
+      let resetArmed = false;
+      let resetArmTimer = null;
+
+      function disarmReset() {
+        resetArmed = false;
+        resetButton.textContent = RESET_LABEL;
+        if (resetArmTimer !== null) {
+          clearTimeout(resetArmTimer);
+          resetArmTimer = null;
+        }
+      }
+
+      resetButton.addEventListener('click', async () => {
+        if (!resetArmed) {
+          resetArmed = true;
+          resetButton.textContent = 'Sure? Click again to reset';
+          resetArmTimer = setTimeout(disarmReset, 5000);
+          return;
+        }
+        disarmReset();
+        const result = await api.resetProgress();
+        setStatus(result && result.ok ? 'progress reset — hatch replaying' : `error: ${result && result.error}`);
+      });
 
       refresh();
     </script>

@@ -115,6 +115,24 @@ export class XpEngine {
     await this.applyState({ xp: this.state.xp + Math.max(0, xpAmount), lastMrrAwardDate: localDate });
   }
 
+  // User-visible progress reset (settings window danger zone). Deliberately
+  // bypasses applyState: a stage regression is not an evolution, so the
+  // emitted update must carry no evolvingTo (applyState sets it
+  // symmetrically on any stage change, which here would fire the evolution
+  // quip via main.ts and start the renderer's evolution sequence instead of
+  // syncing straight to baby). lastSeenLifetimeTokens stays untouched: it
+  // is the usage tracker's forward-only durable cursor, and resetting it
+  // would re-award the entire lifetime token history on the next tracker
+  // tick — silently undoing the reset.
+  async resetProgress(): Promise<void> {
+    this.state = { ...this.state, xp: 0, lastMrrAwardDate: null };
+    await saveState(this.stateDir, this.state);
+    const { level, stage } = this.getState();
+    const update: PetUpdate = { level, stage };
+    this.lastUpdate = update;
+    for (const listener of this.listeners) listener(update);
+  }
+
   private async applyXp(deltaXp: number, lastSeenLifetimeTokens: number): Promise<void> {
     await this.applyState({ xp: this.state.xp + deltaXp, lastSeenLifetimeTokens });
   }

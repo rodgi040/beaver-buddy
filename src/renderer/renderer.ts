@@ -182,6 +182,10 @@ window.beaverBuddy.onQuip((quip) => {
 
 window.beaverBuddy.onHatchStart(() => {
   hatchState = startHatch();
+  // A hatch restarts the pet from baby: drop any in-flight evolution so the
+  // post-hatch pet update is not discarded by the !evolutionState guard in
+  // onPetChanged and the renderer cannot snap back to the pre-reset stage.
+  evolutionState = null;
   loadLodgeSheet()
     .then((loaded) => {
       lodgeSheet = loaded;

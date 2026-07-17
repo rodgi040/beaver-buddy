@@ -11,7 +11,7 @@ import {
 import { loadOnboardingState, saveOnboardingState } from './onboarding';
 import { createPauseState, isPaused, setSystemPause, toggleManualPause, type PauseState } from './pause-state';
 import { createTray, formatPetLabel } from './tray';
-import { configureAlwaysOnTop, fitWindowToWorkArea, getPrimaryWorkAreaInfo, onWorkAreaChanged } from './overlay-adapter';
+import { configureAlwaysOnTop, fitWindowToWorkArea, getOverlayWindowBounds, getPrimaryWorkAreaInfo, onWorkAreaChanged } from './overlay-adapter';
 import { XpEngine, type PetUpdate } from './xp/engine';
 import { UsageTracker } from './usage/tracker';
 import { createDetectorState, detectEvents } from './quips/detectors';
@@ -115,13 +115,13 @@ function parseKeychainService(argv: readonly string[]): string {
 }
 
 function createWindow(): BrowserWindow {
-  const { workArea } = screen.getPrimaryDisplay();
+  const initialBounds = getOverlayWindowBounds(screen.getPrimaryDisplay());
 
   const win = new BrowserWindow({
-    x: workArea.x,
-    y: workArea.y,
-    width: workArea.width,
-    height: workArea.height,
+    x: initialBounds.x,
+    y: initialBounds.y,
+    width: initialBounds.width,
+    height: initialBounds.height,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -166,10 +166,18 @@ function printSmokeResultAndExit(win: BrowserWindow): void {
       // set once at window construction and cannot change afterwards.
       transparent: true,
       paused: isPaused(pauseState),
+      // Windows transparent frameless windows are enlarged by ~3px by the OS,
+      // so exact equality fails. Allow a small tolerance in each dimension.
       boundsMatchWorkArea: (() => {
         const wb = win.getBounds();
-        const wa = screen.getPrimaryDisplay().workArea;
-        return wb.x === wa.x && wb.y === wa.y && wb.width === wa.width && wb.height === wa.height;
+        const wa = getOverlayWindowBounds(screen.getPrimaryDisplay());
+        const tolerance = 4;
+        return (
+          Math.abs(wb.x - wa.x) <= tolerance &&
+          Math.abs(wb.y - wa.y) <= tolerance &&
+          Math.abs(wb.width - wa.width) <= tolerance &&
+          Math.abs(wb.height - wa.height) <= tolerance
+        );
       })(),
     };
     process.stdout.write(`${JSON.stringify(result)}\n`);
@@ -231,6 +239,7 @@ app.whenReady().then(async () => {
   const mrrEngine = new MrrEngine({
     xpEngine,
     getMode: () => growthSettings.mode,
+    getSecretStoreDir: () => stateDir,
     getKeychainService: () => keychainService,
     getConnected: () => ({ stripe: growthSettings.stripeConnected, revenuecat: growthSettings.revenuecatConnected }),
   });
@@ -250,6 +259,18 @@ app.whenReady().then(async () => {
         xpEngine.setMode(growthSettings.mode);
         tray.refresh();
         if (growthSettings.mode === 'mrr' && mrrPollNowOnModeSwitch) void mrrEngine.pollNow();
+      },
+      onProgressReset: async () => {
+        // Persist before send: same exactly-once discipline as the launch
+        // hatch path — a kill mid-hatch must not re-hatch on next launch.
+        await saveOnboardingState(stateDir, { hatched: true });
+        // Hatch before the pet update, same ordering invariant as
+        // did-finish-load (the renderer suppresses evolution handling while
+        // a hatch is active).
+        mainWindow?.webContents.send(HATCH_START_CHANNEL);
+        // Emits the pet update through the onUpdate wiring above, which
+        // does tray.refresh() + PET_CHANGED — nothing else to notify.
+        await xpEngine.resetProgress();
       },
     });
   }

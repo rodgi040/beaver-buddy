@@ -33,6 +33,7 @@ vi.mock('electron', () => ({
 import {
   configureAlwaysOnTop,
   detectTaskbarEdge,
+  effectiveWorkArea,
   fitWindowToWorkArea,
   getOverlayWindowBounds,
   getPrimaryWorkAreaInfo,
@@ -71,6 +72,63 @@ describe('detectTaskbarEdge', () => {
   });
 });
 
+describe('effectiveWorkArea', () => {
+  let originalPlatform: PropertyDescriptor | undefined;
+
+  beforeEach(() => {
+    originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
+  });
+
+  afterEach(() => {
+    if (originalPlatform) Object.defineProperty(process, 'platform', originalPlatform);
+  });
+
+  it('insets the work area on win32 when workArea === bounds (auto-hide)', () => {
+    Object.defineProperty(process, 'platform', { value: 'win32' });
+    const display = {
+      bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+      workArea: { x: 0, y: 0, width: 1920, height: 1080 },
+    } as Electron.Display;
+    expect(effectiveWorkArea(display)).toEqual({ x: 2, y: 2, width: 1916, height: 1076 });
+  });
+
+  it('leaves the work area unchanged on win32 with a visible taskbar', () => {
+    Object.defineProperty(process, 'platform', { value: 'win32' });
+    const display = {
+      bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+      workArea: { x: 0, y: 0, width: 1920, height: 1040 },
+    } as Electron.Display;
+    expect(effectiveWorkArea(display)).toEqual({ x: 0, y: 0, width: 1920, height: 1040 });
+  });
+
+  it('leaves the work area unchanged on darwin even when workArea === bounds', () => {
+    Object.defineProperty(process, 'platform', { value: 'darwin' });
+    const display = {
+      bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+      workArea: { x: 0, y: 0, width: 1920, height: 1080 },
+    } as Electron.Display;
+    expect(effectiveWorkArea(display)).toEqual({ x: 0, y: 0, width: 1920, height: 1080 });
+  });
+
+  it('leaves the work area unchanged on linux even when workArea === bounds', () => {
+    Object.defineProperty(process, 'platform', { value: 'linux' });
+    const display = {
+      bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+      workArea: { x: 0, y: 0, width: 1920, height: 1080 },
+    } as Electron.Display;
+    expect(effectiveWorkArea(display)).toEqual({ x: 0, y: 0, width: 1920, height: 1080 });
+  });
+
+  it('clamps width/height to 1 on a tiny win32 auto-hide display', () => {
+    Object.defineProperty(process, 'platform', { value: 'win32' });
+    const display = {
+      bounds: { x: 0, y: 0, width: 3, height: 2 },
+      workArea: { x: 0, y: 0, width: 3, height: 2 },
+    } as Electron.Display;
+    expect(effectiveWorkArea(display)).toEqual({ x: 2, y: 2, width: 1, height: 1 });
+  });
+});
+
 describe('getPrimaryWorkAreaInfo', () => {
   beforeEach(() => {
     screenEventHandlers.clear();
@@ -90,6 +148,24 @@ describe('getPrimaryWorkAreaInfo', () => {
       taskbarEdge: 'bottom',
     });
   });
+
+  it('returns inset values with taskbarEdge none on win32 auto-hide', () => {
+    const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
+    Object.defineProperty(process, 'platform', { value: 'win32' });
+    setMockPrimaryDisplay({
+      bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+      workArea: { x: 0, y: 0, width: 1920, height: 1080 },
+    } as Electron.Display);
+    const info = getPrimaryWorkAreaInfo();
+    expect(info).toEqual({
+      x: 2,
+      y: 2,
+      width: 1916,
+      height: 1076,
+      taskbarEdge: 'none',
+    });
+    if (originalPlatform) Object.defineProperty(process, 'platform', originalPlatform);
+  });
 });
 
 describe('getOverlayWindowBounds', () => {
@@ -99,6 +175,17 @@ describe('getOverlayWindowBounds', () => {
       workArea: { x: 0, y: 40, width: 1920, height: 1040 },
     } as Electron.Display;
     expect(getOverlayWindowBounds(display)).toEqual({ x: 0, y: 40, width: 1920, height: 1040 });
+  });
+
+  it('returns inset bounds on win32 when the taskbar is auto-hidden', () => {
+    const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
+    Object.defineProperty(process, 'platform', { value: 'win32' });
+    const display = {
+      bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+      workArea: { x: 0, y: 0, width: 1920, height: 1080 },
+    } as Electron.Display;
+    expect(getOverlayWindowBounds(display)).toEqual({ x: 2, y: 2, width: 1916, height: 1076 });
+    if (originalPlatform) Object.defineProperty(process, 'platform', originalPlatform);
   });
 });
 
@@ -181,6 +268,26 @@ describe('onWorkAreaChanged', () => {
       height: 1000,
       taskbarEdge: 'bottom',
     });
+  });
+
+  it('reports inset info when metrics change to win32 auto-hide', () => {
+    const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
+    Object.defineProperty(process, 'platform', { value: 'win32' });
+    const callback = vi.fn();
+    onWorkAreaChanged(callback);
+    setMockPrimaryDisplay({
+      bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+      workArea: { x: 0, y: 0, width: 1920, height: 1080 },
+    } as Electron.Display);
+    emitScreenEvent('display-metrics-changed');
+    expect(callback).toHaveBeenCalledWith({
+      x: 2,
+      y: 2,
+      width: 1916,
+      height: 1076,
+      taskbarEdge: 'none',
+    });
+    if (originalPlatform) Object.defineProperty(process, 'platform', originalPlatform);
   });
 
   it('unsubscribes all handlers when the returned cleanup is called', () => {

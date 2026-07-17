@@ -93,6 +93,17 @@ export function createTray(callbacks: TrayCallbacks, onMenuBuilt?: (labels: read
   const tray = new Tray(icon);
   tray.setToolTip('Beaver Buddy');
 
+  // Windows convention: a single left-click opens the tray menu, but Electron
+  // only shows a setContextMenu() menu on right-click there — wire it manually.
+  // win32-gated: popUpContextMenu() exists only on darwin/win32 (not Linux),
+  // and the gate keeps macOS/Linux behavior byte-identical. Registered once,
+  // outside rebuildMenu(): popUpContextMenu() without arguments always pops
+  // the menu most recently passed to setContextMenu(), so refresh() needs no
+  // handler changes.
+  if (process.platform === 'win32') {
+    tray.on('click', () => tray.popUpContextMenu());
+  }
+
   const rebuildMenu = (): void => {
     const template = buildMenuTemplate(callbacks, rebuildMenu);
     tray.setContextMenu(Menu.buildFromTemplate(template));

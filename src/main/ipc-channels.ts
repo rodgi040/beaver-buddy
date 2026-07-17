@@ -18,3 +18,4 @@ export const BOUNDS_CHANGED_CHANNEL = 'state:bounds';
 export const SETTINGS_SAVE_CHANNEL = 'settings:save';
 export const SETTINGS_READ_STATUS_CHANNEL = 'settings:read-status';
 export const SETTINGS_DISCONNECT_CHANNEL = 'settings:disconnect';
+export const SETTINGS_RESET_PROGRESS_CHANNEL = 'settings:reset-progress';

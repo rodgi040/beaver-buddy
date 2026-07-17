@@ -9,9 +9,9 @@
 import path from 'node:path';
 import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron';
 import { applyWindowHardening } from '../hardening';
-import { SETTINGS_DISCONNECT_CHANNEL, SETTINGS_READ_STATUS_CHANNEL, SETTINGS_SAVE_CHANNEL } from '../ipc-channels';
-import { deleteKeychainSecret, setKeychainSecret } from './keychain';
+import { SETTINGS_DISCONNECT_CHANNEL, SETTINGS_READ_STATUS_CHANNEL, SETTINGS_RESET_PROGRESS_CHANNEL, SETTINGS_SAVE_CHANNEL } from '../ipc-channels';
 import { REVENUECAT_KEY_ACCOUNT, REVENUECAT_PROJECT_ACCOUNT, STRIPE_KEY_ACCOUNT } from './mrr-config';
+import { deleteSecret, setSecret } from './secrets';
 import { saveSettingsState, type Mode, type SettingsState } from './settings-store';
 import { isValidationError, validateDisconnectInput, validateSaveInput } from './settings-validate';
 
@@ -20,6 +20,7 @@ export interface SettingsWindowDeps {
   readonly keychainService: string;
   readonly getSettings: () => SettingsState;
   readonly onSettingsChanged: (next: SettingsState) => void;
+  readonly onProgressReset: () => Promise<void>;
 }
 
 let settingsWindow: BrowserWindow | null = null;
@@ -45,6 +46,7 @@ export interface SettingsHandlers {
   readStatus(event: IpcMainInvokeEvent): unknown;
   save(event: IpcMainInvokeEvent, payload: unknown): Promise<unknown>;
   disconnect(event: IpcMainInvokeEvent, payload: unknown): Promise<unknown>;
+  resetProgress(event: IpcMainInvokeEvent): Promise<unknown>;
 }
 
 // Handler bodies are Electron-free (validate + keychain + settings store +
@@ -72,16 +74,16 @@ export function createSettingsHandlers(
 
       try {
         if (parsed.stripeKey) {
-          await setKeychainSecret(deps.keychainService, STRIPE_KEY_ACCOUNT, parsed.stripeKey);
+          await setSecret(deps.stateDir, deps.keychainService, STRIPE_KEY_ACCOUNT, parsed.stripeKey);
           stripeConnected = true;
         }
         if (parsed.revenuecatKey && parsed.revenuecatProjectId) {
-          await setKeychainSecret(deps.keychainService, REVENUECAT_KEY_ACCOUNT, parsed.revenuecatKey);
-          await setKeychainSecret(deps.keychainService, REVENUECAT_PROJECT_ACCOUNT, parsed.revenuecatProjectId);
+          await setSecret(deps.stateDir, deps.keychainService, REVENUECAT_KEY_ACCOUNT, parsed.revenuecatKey);
+          await setSecret(deps.stateDir, deps.keychainService, REVENUECAT_PROJECT_ACCOUNT, parsed.revenuecatProjectId);
           revenuecatConnected = true;
         }
       } catch {
-        return { ok: false, error: 'keychain write failed' };
+        return { ok: false, error: 'secret write failed' };
       }
 
       const mode = nextModeAfterSave(parsed.mode ?? current.mode, stripeConnected, revenuecatConnected);
@@ -102,15 +104,15 @@ export function createSettingsHandlers(
 
       try {
         if (parsed.target === 'stripe') {
-          await deleteKeychainSecret(deps.keychainService, STRIPE_KEY_ACCOUNT);
+          await deleteSecret(deps.stateDir, deps.keychainService, STRIPE_KEY_ACCOUNT);
           stripeConnected = false;
         } else {
-          await deleteKeychainSecret(deps.keychainService, REVENUECAT_KEY_ACCOUNT);
-          await deleteKeychainSecret(deps.keychainService, REVENUECAT_PROJECT_ACCOUNT);
+          await deleteSecret(deps.stateDir, deps.keychainService, REVENUECAT_KEY_ACCOUNT);
+          await deleteSecret(deps.stateDir, deps.keychainService, REVENUECAT_PROJECT_ACCOUNT);
           revenuecatConnected = false;
         }
       } catch {
-        return { ok: false, error: 'keychain delete failed' };
+        return { ok: false, error: 'secret delete failed' };
       }
 
       const mode = nextModeAfterDisconnect(current.mode, stripeConnected, revenuecatConnected);
@@ -118,6 +120,19 @@ export function createSettingsHandlers(
       await saveSettingsState(deps.stateDir, next);
       deps.onSettingsChanged(next);
       return { ok: true };
+    },
+
+    // The reset orchestration itself (persist onboarding, hatch send, XP
+    // engine reset) lives with the dep's caller in main.ts — this handler
+    // only guards the sender and maps success/failure onto the result.
+    async resetProgress(event) {
+      if (!isAuthorized(event)) return { ok: false, error: 'unauthorized' };
+      try {
+        await deps.onProgressReset();
+        return { ok: true };
+      } catch {
+        return { ok: false, error: 'reset failed' };
+      }
     },
   };
 }
@@ -130,6 +145,7 @@ function registerHandlers(deps: SettingsWindowDeps): void {
   ipcMain.handle(SETTINGS_READ_STATUS_CHANNEL, (event) => handlers.readStatus(event));
   ipcMain.handle(SETTINGS_SAVE_CHANNEL, (event, payload: unknown) => handlers.save(event, payload));
   ipcMain.handle(SETTINGS_DISCONNECT_CHANNEL, (event, payload: unknown) => handlers.disconnect(event, payload));
+  ipcMain.handle(SETTINGS_RESET_PROGRESS_CHANNEL, (event) => handlers.resetProgress(event));
 }
 
 export function openSettingsWindow(deps: SettingsWindowDeps): void {
@@ -142,7 +158,7 @@ export function openSettingsWindow(deps: SettingsWindowDeps): void {
 
   const win = new BrowserWindow({
     width: 420,
-    height: 480,
+    height: 540, // +60 over the original 480: the Reset danger-zone fieldset needs the room (window is not resizable)
     resizable: false,
     title: 'Beaver Buddy — Growth Settings',
     webPreferences: {
