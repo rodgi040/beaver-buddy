@@ -2,7 +2,8 @@
 // box and downscales it to the rig's part size (premultiplied-alpha
 // area-average — avoids black fringing, same technique as
 // scripts/gen-sprites/ingest-images.mjs). Output lands in
-// assets-src/parts/<rig>/ (gitignored), overwriting the placeholders.
+// assets-src/parts/<rig>/ (committed source assets), overwriting the
+// placeholders.
 //
 // Usage: node tools/puppet-studio/ingest-parts.mjs <runDir> <rigName>
 //   e.g. node tools/puppet-studio/ingest-parts.mjs assets-src/comfyui/parts-run-1 beaver-baby
