@@ -81,26 +81,34 @@ async function loadRig(rigName: string): Promise<void> {
   }
 
   const app = new Application();
-  await app.init({
-    width: rig.tile,
-    height: rig.tile,
-    backgroundAlpha: 0,
-    resolution: 1,
-    antialias: false,
-  });
-  app.canvas.style.width = `${rig.tile * STAGE_ZOOM}px`;
-  app.canvas.style.height = `${rig.tile * STAGE_ZOOM}px`;
-  app.canvas.style.imageRendering = 'pixelated';
-  stageHost.replaceChildren(app.canvas);
+  try {
+    await app.init({
+      width: rig.tile,
+      height: rig.tile,
+      backgroundAlpha: 0,
+      resolution: 1,
+      antialias: false,
+    });
+    app.canvas.style.width = `${rig.tile * STAGE_ZOOM}px`;
+    app.canvas.style.height = `${rig.tile * STAGE_ZOOM}px`;
+    app.canvas.style.imageRendering = 'pixelated';
+    stageHost.replaceChildren(app.canvas);
 
-  const textures = new Map<string, Texture>();
-  for (const part of rig.parts) {
-    textures.set(part.id, await Assets.load(`/parts/${rig.name}/${part.src}`));
+    const textures = new Map<string, Texture>();
+    for (const part of rig.parts) {
+      textures.set(part.id, await Assets.load(`/parts/${rig.name}/${part.src}`));
+    }
+
+    const stage = buildRigStage(rig, textures);
+    app.stage.addChild(stage.root);
+    session = { app, rig, stage, recipes: recipesForRig(rig.name) };
+  } catch (error) {
+    // Without this the half-initialized app (canvas + GPU textures) leaks on
+    // every failed rig switch, because `session` only takes ownership at the
+    // end of the happy path.
+    app.destroy(true);
+    throw error;
   }
-
-  const stage = buildRigStage(rig, textures);
-  app.stage.addChild(stage.root);
-  session = { app, rig, stage, recipes: recipesForRig(rig.name) };
 
   animSelect.replaceChildren();
   for (const recipe of session.recipes) {
