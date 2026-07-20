@@ -99,33 +99,48 @@ twice (BL-11's `teen-to-right-1` as walk frame, then its `-1-4` replacement).
   noted in `lodge.json`). fps hint: 10 (unchanged; the renderer's shared
   `SPRITE_FPS` constant is 8 — see `src/renderer/pet-config.ts` for why that
   mismatch is cosmetic, not a bug).
-- Adult stage art (BL-18) is golden generated art like baby/teen: `idle`/
-  `walk` via `scripts/gen-sprites/ingest-images.mjs` (`npm run
-  assets:ingest-adult`), `struggle`/`parachute-wind`/`land` appended via
-  `scripts/gen-sprites/ingest-animation-frames.mjs adult` (`npm run
-  assets:adult-anims`).
+- Adult stage art: `idle`/`walk` are the placeholder derived from the
+  committed teen sheet (`scripts/gen-sprites/build-adult-placeholder.ts`,
+  `npm run assets:adult-placeholder`) — a first BL-18 attempt at replacing
+  these with golden generated art was rejected by the owner as generic/
+  off-model and reverted. `struggle`/`parachute-wind`/`land` are appended
+  via `scripts/gen-sprites/ingest-animation-frames.mjs adult` (`npm run
+  assets:adult-anims`) and are reference-matched to this same darker
+  placeholder adult, not the rejected golden art.
 
 ## Provenance
 
 **Beaver stages** (`beaver-baby.png`, `beaver-teen.png`, `beaver-adult.png`):
-`idle`/`walk` rows for all three stages are generated images (baby/teen:
-external image-gen, owner-supplied; adult (BL-18): Comfy Cloud, golden run)
-ingested via
-`scripts/gen-sprites/ingest-images.mjs` — background removal (flood-fill
-transparency from the borders over near-white/near-black/already-transparent
-pixels, then a hard alpha threshold), crop to content bbox, premultiplied-
-alpha area-average downscale to a scale factor locked per stage, composited
-onto a 96×96 tile bottom-aligned and horizontally centered. Colors ship as
-generated — the 16-color palette rule above is waived for these sheets by
-owner decision, 2026-07-14. Source images live in the gitignored
-`assets-src/beaver/` (not committed — no raw image-gen intermediates in the
-repo, same rule as everywhere else); only the ingested sheets are committed.
-Right-facing frames only — the user's left-facing images are unused (see
-Facing & mirroring above). `struggle`/`parachute-wind`/`land` rows for baby
-and adult are appended separately by
-`scripts/gen-sprites/ingest-animation-frames.mjs` from Comfy Cloud run dumps
-(gitignored `assets-src/comfyui/<run>/`) — same mechanical pipeline, one
-scale lock per animation row (see Sheet row order & timing above).
+`idle`/`walk` rows for baby and teen are generated images (external
+image-gen, owner-supplied) ingested via `scripts/gen-sprites/ingest-images.mjs`
+— background removal (flood-fill transparency from the borders over
+near-white/near-black/already-transparent pixels, then a hard alpha
+threshold), crop to content bbox, premultiplied-alpha area-average downscale
+to a scale factor locked per stage, composited onto a 96×96 tile
+bottom-aligned and horizontally centered. Colors ship as generated — the
+16-color palette rule above is waived for these sheets by owner decision,
+2026-07-14. Source images live in the gitignored `assets-src/beaver/` (not
+committed — no raw image-gen intermediates in the repo, same rule as
+everywhere else); only the ingested sheets are committed. Right-facing
+frames only — the user's left-facing images are unused (see Facing &
+mirroring above).
+
+Adult `idle`/`walk` are not independently generated: they're a mechanical
+nearest-neighbor upscale of the committed teen sheet
+(`scripts/gen-sprites/build-adult-placeholder.ts`) so the adult reads as a
+bigger beaver with zero authored pixels — the same placeholder used before
+BL-18. A first BL-18 pass replaced this with golden Comfy-generated idle/walk
+art; the owner rejected it as generic and off-model, so it was reverted and
+the placeholder restored.
+
+`struggle`/`parachute-wind`/`land` rows for baby and adult are appended
+separately by `scripts/gen-sprites/ingest-animation-frames.mjs` from Comfy
+Cloud run dumps (gitignored `assets-src/comfyui/<run>/`) — same mechanical
+pipeline, one scale lock per animation row (see Sheet row order & timing
+above). The adult anim rows (BL-18) are reference-matched to the previous
+(darker, teen-upscale) adult: generated via Comfy Cloud Nano Banana Pro,
+using the prior adult sprite as a reference image so the new poses stay one
+consistent beaver with the restored idle/walk rows above.
 
 **Lodge** (`lodge.png`): pixel maps authored by OpenAI Codex (vision-guided
 from a user-supplied reference image), iterated through visual design-review

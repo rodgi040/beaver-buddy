@@ -52,17 +52,18 @@ export const BABY = {
 };
 
 // Adult frames are the same 3 poses on a bigger, wider-limbed rig (BL-18).
-// computeStageScale's width term is the clipping guard (see ingest-images.mjs);
-// checked against the actual adult-struggle/-land frames, the widest-spread
-// pose still lands well under the 96px tile at baby's own heights, so no
-// per-row reduction was needed.
+// Restored idle/walk (build-adult-placeholder.ts) upscale teen content to
+// fill the full 96px tile, so the anim rows are targeted taller than baby's
+// own heights to read as the same size beaver — computeStageScale's width
+// term remains the clipping guard (see ingest-images.mjs) if a height gets
+// bumped further.
 export const ADULT = {
   shippedPng: 'beaver-adult.png',
   bakedDirName: 'beaver-adult',
   animations: [
-    { name: 'struggle', run: 'adult-struggle', targetContentHeightPx: 82 },
-    { name: 'parachute-wind', run: 'adult-parachute-wind', targetContentHeightPx: 92 },
-    { name: 'land', run: 'adult-land', targetContentHeightPx: 92 },
+    { name: 'struggle', run: 'adult-struggle', targetContentHeightPx: 90 },
+    { name: 'parachute-wind', run: 'adult-parachute-wind', targetContentHeightPx: 96 },
+    { name: 'land', run: 'adult-land', targetContentHeightPx: 90 },
   ],
 };
 
