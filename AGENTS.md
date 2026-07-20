@@ -16,6 +16,18 @@ Local planning docs (Flightplan: `.flightplan/` with `STATE.md`, `ROADMAP.md`,
 gitignored by design — see the "Planning & Flightplan (local-only)" section in
 `CLAUDE.md`.
 
+## Asset generation & editing — TOOLING RULE
+
+**All ComfyUI asset work (generating new sprite strips AND editing/cleaning
+existing generated frames) is done by Claude Code**, because only Claude Code
+has the Comfy Cloud MCP server configured (`https://cloud.comfy.org/mcp`).
+The pi agent has no MCP support by design — it owns runtime/logic work and
+delegates every asset task to a Claude Code session via the Flightplan
+handoff (`.flightplan/HANDOFF.md` + the active phase's `WAVE-X.md` carry the
+concrete asset brief). If the Comfy Cloud connection is missing in Claude
+Code, reconnect: `claude mcp add --transport http comfy-cloud
+https://cloud.comfy.org/mcp`, then `/mcp` → Authenticate.
+
 ## Dependencies — HARD RULE
 
 **No new dependencies without explicit prior approval from the maintainer.**
