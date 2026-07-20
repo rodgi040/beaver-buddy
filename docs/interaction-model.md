@@ -2,8 +2,7 @@
 
 > Specification of the beaver grab/drop interaction. Platform-neutral on
 > purpose: it is the reference for the Windows implementation and for any
-> future port (e.g. macOS). Status: **specification draft** (2026-07-20),
-> verified against the implementation in Milestone 2 / Phase 3 / Wave 2.
+> future port (e.g. macOS). Status: **verified against implementation** (2026-07-20).
 
 ## Overview
 
@@ -52,12 +51,15 @@ usable. The interaction requires temporarily capturing input:
   (`setIgnoreMouseEvents(false)`) so clicks on the beaver register; when the
   cursor leaves, it switches back. Trade-off (standard for desktop pets):
   while hovering the beaver, that screen region does not pass clicks to apps
-  below.
+  below. This hover capture only applies while the pet is in the **baby**
+  stage; in teen/adult the overlay stays fully click-through.
 - **Full capture (grabbed):** the overlay captures **all** mouse input. No
   window below is clickable until the beaver is released. This is an explicit
-  product decision (Owner, 2026-07-20).
+  product decision (Owner, 2026-07-20) and is only available in the baby
+  stage.
 - **Release → click-through:** after the double-click, capture is returned and
-  the overlay is click-through again during `gliding` and `landing`.
+  the overlay is click-through again during `gliding` and `landing`, even when
+  the cursor is hovering over the descending beaver (C3 refinement).
 
 ## Glide physics
 
@@ -83,9 +85,9 @@ usable. The interaction requires temporarily capturing input:
 
 | Row              | Purpose                          | Frames |
 |------------------|----------------------------------|--------|
-| `struggle`       | dangling/wriggling while grabbed | tbd (M2/P3/W1) |
+| `struggle`       | dangling/wriggling while grabbed | 8      |
 | `parachute-wind` | gliding with visible wind        | 8      |
-| `land`           | touchdown, absorb, into idle     | tbd (M2/P3/W1) |
+| `land`           | touchdown, absorb, into idle     | 8      |
 
 All rows follow the app sheet format (96×96 tiles), registered in
 `docs/asset-gallery.md` and gated by the design review (#38).

@@ -309,17 +309,11 @@ export function computeStageScale(bboxes, tile, targetContentHeightPx) {
 // only, idle then walk, no run/sleep/react. The user's left-facing images
 // ({stage}-idle-left.png, {stage}-to-left-{1,2}.png) are unused — the
 // renderer mirrors right-facing frames instead (see BL-11 verdict doc).
+//
+// Baby is built by ingest-animation-frames.mjs (parachute drop / BL-17);
+// it is intentionally absent from this list so the still-frame ingest only
+// rebuilds teen.
 export const STAGE_SPECS = [
-  {
-    name: 'beaver-baby',
-    tile: TILE,
-    fps: FPS,
-    targetContentHeightPx: 72,
-    rows: [
-      { name: 'idle', files: ['baby-idle-right.png'] },
-      { name: 'walk', files: ['baby-to-right-1.png', 'baby-to-right-2.png'] },
-    ],
-  },
   {
     name: 'beaver-teen',
     tile: TILE,
