@@ -290,10 +290,20 @@ export function openSettingsWindow(deps: SettingsWindowDeps): void {
 
   win.loadFile(path.join(app.getAppPath(), 'dist', 'main', 'mrr', 'settings.html')).catch((error: unknown) => {
     console.error('Failed to load settings window:', error);
+    if (!win.isDestroyed()) {
+      win.destroy();
+    }
+    // A late rejection must not clobber a *different*, already-open
+    // replacement window if one was opened before this promise settled.
+    if (settingsWindow === win) {
+      settingsWindow = null;
+    }
   });
 
   win.on('closed', () => {
-    settingsWindow = null;
+    if (settingsWindow === win) {
+      settingsWindow = null;
+    }
   });
 
   settingsWindow = win;
