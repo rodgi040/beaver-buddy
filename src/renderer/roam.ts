@@ -251,6 +251,8 @@ function enterGrabbed(state: RoamState, bounds: Bounds, input: RoamInput): RoamS
     anim: 'struggle',
     x: clamp(input.cursorX, 0, maxX(bounds)),
     y: clamp(input.cursorY, 0, groundY(bounds)),
+    facing: 'right',
+    rotation: 0,
     clickCount: 0,
     clickWindowRemaining: 0,
     frameHold: false,
@@ -266,6 +268,7 @@ function releaseToGlide(state: RoamState, bounds: Bounds, input: RoamInput, rng:
     anim: 'parachute-wind',
     x,
     y,
+    facing: 'right',
     rotation: 0, // reset climb rotation before gliding
     glideBaseX: x,
     glideSwayT: 0,

@@ -222,6 +222,8 @@ describe('roam: parachute C1 grab interaction', () => {
     expect(grabbed.y).toBe(234);
     expect(grabbed.phase).toBe('grabbed');
     expect(grabbed.anim).toBe('struggle');
+    expect(grabbed.facing).toBe('right');
+    expect(grabbed.rotation).toBe(0);
 
     const moved = tick(grabbed, 0.1, bounds, false, rng, {
       ...defaultRoamInput,
@@ -432,6 +434,8 @@ describe('roam: parachute C1 grab interaction', () => {
     expect(gliding.anim).toBe('parachute-wind');
     expect(gliding.x).toBe(250);
     expect(gliding.y).toBe(262); // 250 + GLIDE_FALL_SPEED_PX_S * 0.1
+    expect(gliding.facing).toBe('right');
+    expect(gliding.rotation).toBe(0);
   });
 });
 

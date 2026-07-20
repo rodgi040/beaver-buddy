@@ -100,4 +100,20 @@ describe('determineCaptureMode', () => {
     const state = { ...createRoamState({ width: 1000, height: 1000 }, () => 0.5), phase: 'landing' as const };
     expect(determineCaptureMode(state, 50, 50, 0, 0)).toBe('hover-forward');
   });
+
+  it('returns hover-forward everywhere when interaction is disabled, even grabbed or hovered', () => {
+    const bounds = { width: 1000, height: 1000 };
+    const roam = createRoamState(bounds, () => 0.5);
+    const grabbed = { ...roam, phase: 'grabbed' as const };
+    const gliding = { ...roam, phase: 'gliding' as const };
+    const landing = { ...roam, phase: 'landing' as const };
+
+    expect(determineCaptureMode(grabbed, 50, 50, 0, 0, false)).toBe('hover-forward');
+    expect(determineCaptureMode(gliding, 50, 50, 0, 0, false)).toBe('hover-forward');
+    expect(determineCaptureMode(landing, 50, 50, 0, 0, false)).toBe('hover-forward');
+    // Cursor directly over the pet while roaming.
+    expect(determineCaptureMode(roam, 50, 50, 0, 0, false)).toBe('hover-forward');
+    // Cursor away from the pet.
+    expect(determineCaptureMode(roam, 500, 500, 0, 0, false)).toBe('hover-forward');
+  });
 });

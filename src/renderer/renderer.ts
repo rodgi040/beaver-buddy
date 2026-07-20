@@ -257,10 +257,12 @@ document.addEventListener('mousemove', (event) => {
 });
 
 document.addEventListener('pointerdown', (event) => {
+  if (stage !== 'baby') return;
   recordClickOnPet(inputQueue, event.clientX, event.clientY, currentPetDrawX, currentPetDrawY);
 });
 
 document.addEventListener('dblclick', () => {
+  if (stage !== 'baby') return;
   recordDoubleClick(inputQueue);
 });
 
@@ -535,8 +537,10 @@ function frame(timestampMs: number): void {
   window.__debugQuip = quipState ? quipState.text : null;
 
   // Determine overlay input-capture mode from the post-tick state and the
-  // cursor position captured in this frame's input.
-  const desiredMode = determineCaptureMode(roamState, input.cursorX, input.cursorY, drawX, drawY);
+  // cursor position captured in this frame's input. The parachute interaction
+  // is only active during the baby stage; in all other stages the overlay
+  // stays fully click-through.
+  const desiredMode = determineCaptureMode(roamState, input.cursorX, input.cursorY, drawX, drawY, stage === 'baby');
   if (desiredMode !== currentCaptureMode) {
     window.beaverBuddy.requestCaptureMode(desiredMode);
     currentCaptureMode = desiredMode;

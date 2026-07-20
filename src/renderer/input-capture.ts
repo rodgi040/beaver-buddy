@@ -54,7 +54,12 @@ export function determineCaptureMode(
   cursorY: number,
   petX: number,
   petY: number,
+  interactionEnabled: boolean = true,
 ): CaptureMode {
+  // BL-17: the parachute interaction is only available in the baby stage.
+  // When interaction is disabled, the overlay must stay click-through
+  // even while the cursor is over the pet.
+  if (!interactionEnabled) return 'hover-forward';
   if (roamState.phase === 'grabbed') return 'full-capture';
   // Spec (docs/interaction-model.md): during gliding/landing the overlay is
   // click-through — hovering the descending beaver must not swallow desktop
