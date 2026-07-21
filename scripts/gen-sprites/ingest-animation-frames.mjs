@@ -61,7 +61,7 @@ export const ADULT = {
   shippedPng: 'beaver-adult.png',
   bakedDirName: 'beaver-adult',
   animations: [
-    { name: 'struggle', run: 'adult-struggle', targetContentHeightPx: 90 },
+    { name: 'struggle', run: 'adult-struggle', targetContentHeightPx: 96 },
     { name: 'parachute-wind', run: 'adult-parachute-wind', targetContentHeightPx: 96 },
     { name: 'land', run: 'adult-land', targetContentHeightPx: 90 },
   ],
