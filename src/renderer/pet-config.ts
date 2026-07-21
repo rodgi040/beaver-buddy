@@ -53,6 +53,17 @@ export const TARGET_EPSILON_PX = 1;
 export const ROTATION_LEFT_CLIMB_DEG = 90;
 export const ROTATION_RIGHT_CLIMB_DEG = -90;
 
+// Parachute glide + landing (BL-17 / C2). The beaver falls slowly while
+// swaying side-to-side, then plays a short landing animation before resuming
+// idle roam. All values are in logical pixels / seconds / radians.
+export const GLIDE_FALL_SPEED_PX_S = 120; // ~5x walk speed => 4–8 s glide
+export const GLIDE_SWAY_SPEED_MIN = 1.5; // rad/s
+export const GLIDE_SWAY_SPEED_MAX = 2.5; // rad/s
+export const GLIDE_SWAY_AMP_MIN_PX = 20;
+export const GLIDE_SWAY_AMP_MAX_PX = 45;
+export const GLIDE_ROTATION_MAX_DEG = 12;
+export const LANDING_DURATION_S = 0.8;
+
 // Evolution sequence tuning (shake -> flash -> new stage; BL-11 dropped the
 // trailing celebrate — no react row in the ingested sheets).
 export const EVOLUTION_SHAKE_DURATION_S = 1.2;
@@ -106,3 +117,18 @@ export const BUBBLE_TAIL_SIZE_PX = 5;
 // Gap between the pet tile's top edge and the bubble's bottom edge (the tail
 // occupies part of this gap).
 export const BUBBLE_OFFSET_ABOVE_PET_PX = 8;
+
+// Grab interaction: number of clicks inside the window needed to grab the
+// beaver, and the duration of that window in seconds.
+export const CLICKS_TO_GRAB = 3;
+export const CLICK_WINDOW_S = 4;
+
+// "Working" easter egg: when an idle pause ends, the beaver occasionally sits
+// where it is and frantically types on a laptop for a while (the typing-cat
+// meme), then resumes roaming. Low probability so it's a noticed surprise, not
+// a per-idle habit; the duration is the long "epic" typing loop itself.
+// MVP has no sit/open/close/stand transition frames — it snaps into the type
+// loop and back to idle (handoff: transitions are later polish).
+export const WORK_PROBABILITY = 0.05;
+export const WORK_DURATION_MIN_S = 8;
+export const WORK_DURATION_MAX_S = 16;

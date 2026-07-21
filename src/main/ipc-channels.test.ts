@@ -2,14 +2,17 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   HATCH_START_CHANNEL,
+  INPUT_CAPTURE_MODE_CHANNEL,
   PAUSE_CHANGED_CHANNEL,
   PET_CHANGED_CHANNEL,
   QUIP_CHANGED_CHANNEL,
+  FORCE_WORK_CHANNEL,
   SETTINGS_DISCONNECT_CHANNEL,
   SETTINGS_READ_STATUS_CHANNEL,
   SETTINGS_RESET_PROGRESS_CHANNEL,
   SETTINGS_SAVE_CHANNEL,
   SETTINGS_CONNECT_USAGE_CHANNEL,
+  SETTINGS_FORCE_WORK_CHANNEL,
 } from './ipc-channels';
 
 // preload.ts runs sandboxed and cannot require sibling modules, so it carries
@@ -35,9 +38,19 @@ describe('ipc-channels drift guard', () => {
     expect(match?.[1]).toBe(HATCH_START_CHANNEL);
   });
 
+  it('preload.ts hand-synced channel literal matches INPUT_CAPTURE_MODE_CHANNEL', () => {
+    const match = source.match(/const INPUT_CAPTURE_MODE_CHANNEL = '([^']*)'/);
+    expect(match?.[1]).toBe(INPUT_CAPTURE_MODE_CHANNEL);
+  });
+
   it('preload.ts hand-synced channel literal matches QUIP_CHANGED_CHANNEL', () => {
     const match = source.match(/const QUIP_CHANGED_CHANNEL = '([^']*)'/);
     expect(match?.[1]).toBe(QUIP_CHANGED_CHANNEL);
+  });
+
+  it('preload.ts hand-synced channel literal matches FORCE_WORK_CHANNEL', () => {
+    const match = source.match(/const FORCE_WORK_CHANNEL = '([^']*)'/);
+    expect(match?.[1]).toBe(FORCE_WORK_CHANNEL);
   });
 
   // The settings window has its own sandboxed preload (mrr/settings-preload.ts)
@@ -67,5 +80,10 @@ describe('ipc-channels drift guard', () => {
   it('settings-preload.ts hand-synced channel literal matches SETTINGS_CONNECT_USAGE_CHANNEL', () => {
     const match = settingsSource.match(/const SETTINGS_CONNECT_USAGE_CHANNEL = '([^']*)'/);
     expect(match?.[1]).toBe(SETTINGS_CONNECT_USAGE_CHANNEL);
+  });
+
+  it('settings-preload.ts hand-synced channel literal matches SETTINGS_FORCE_WORK_CHANNEL', () => {
+    const match = settingsSource.match(/const SETTINGS_FORCE_WORK_CHANNEL = '([^']*)'/);
+    expect(match?.[1]).toBe(SETTINGS_FORCE_WORK_CHANNEL);
   });
 });

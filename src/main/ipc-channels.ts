@@ -1,6 +1,7 @@
 // Narrow IPC channels, shared by main and preload so each string literal
 // exists in exactly one place (preload carries a hand-synced copy of each —
 // see preload.ts's top comment for why it can't import this module).
+export const INPUT_CAPTURE_MODE_CHANNEL = 'input:capture-mode';
 export const PAUSE_CHANGED_CHANNEL = 'state:paused';
 export const PET_CHANGED_CHANNEL = 'state:pet';
 // One-way main -> renderer only; no renderer -> main channel exists.
@@ -11,6 +12,9 @@ export const QUIP_CHANGED_CHANNEL = 'state:quip';
 // One-way main -> renderer only; notifies the renderer of the overlay's
 // current work-area bounds so it does not rely on window.innerWidth/Height.
 export const BOUNDS_CHANGED_CHANNEL = 'state:bounds';
+// One-way main -> renderer only; asks the overlay to start the "sit and type"
+// working animation now (manual trigger from the settings button).
+export const FORCE_WORK_CHANNEL = 'state:force-work';
 
 // Settings-window-only, renderer -> main invoke/response channels (the
 // app's first renderer-originated IPC). Never reachable from the pet
@@ -22,3 +26,7 @@ export const SETTINGS_RESET_PROGRESS_CHANNEL = 'settings:reset-progress';
 // Settings-window-only: re-scan local Claude Code / Codex usage logs
 // (booleans only — never paths). "Connect" = detect logs on this machine.
 export const SETTINGS_CONNECT_USAGE_CHANNEL = 'settings:connect-usage';
+// Settings-window-only, renderer -> main invoke: manually trigger the beaver's
+// "sit and type" working animation (a fun/test button; main forwards it to the
+// overlay via FORCE_WORK_CHANNEL).
+export const SETTINGS_FORCE_WORK_CHANNEL = 'settings:force-work';

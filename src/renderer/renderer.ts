@@ -7,7 +7,17 @@
 // something actually changed (dirty flag) and fully skips work while the
 // document is hidden.
 
-import { clampRoamStateToBounds, createRoamState, tick, type RoamState, type Bounds } from './roam.js';
+import {
+  createInputQueue,
+  updateCursor,
+  recordClickOnPet,
+  recordDoubleClick,
+  consumeInput,
+  determineCaptureMode,
+  stageHasInteraction,
+  type CaptureMode,
+} from './input-capture.js';
+import { clampRoamStateToBounds, createRoamState, forceWorking, tick, type RoamState, type Bounds } from './roam.js';
 import {
   BUBBLE_TAIL_SIZE_PX,
   EVOLUTION_SHAKE_JITTER_PX,
@@ -21,7 +31,7 @@ import {
   PET_SCALE,
   SPRITE_FPS,
 } from './pet-config.js';
-import { loadSheet, loadLodgeSheet, drawFrame, type Sheet, type Stage } from './sprites.js';
+import { loadSheet, loadLodgeSheet, drawFrame, frameRect, type Sheet, type Stage } from './sprites.js';
 import {
   isFlashVisible,
   shakeOffset,
@@ -31,7 +41,7 @@ import {
   type PetChangedPayload,
 } from './evolution.js';
 import { hatchShakeOffset, sparkOffsets, startHatch, tickHatch, type HatchState } from './hatch.js';
-import { drawBubble, layoutBubble } from './bubble.js';
+import { drawBubble, layoutBubble, type BubbleLayout } from './bubble.js';
 import { applyDpr } from './canvas-dpr.js';
 
 interface QuipChangedPayload {
@@ -42,11 +52,13 @@ interface QuipChangedPayload {
 declare global {
   interface Window {
     beaverBuddy: {
+      requestCaptureMode(mode: CaptureMode): void;
       onPausedChanged(callback: (paused: boolean) => void): void;
       onPetChanged(callback: (pet: PetChangedPayload) => void): void;
       onHatchStart(callback: () => void): void;
       onQuip(callback: (quip: QuipChangedPayload) => void): void;
       onBoundsChanged(callback: (bounds: { width: number; height: number }) => void): void;
+      onForceWork(callback: () => void): void;
     };
     // Read-only diagnostic surface; nothing in the app reads it.
     __debugRoam?: RoamState;
@@ -59,7 +71,7 @@ declare global {
 // x/y/width/height rather than a square (roam/evolution/hatch draws) since
 // the quip bubble is wider than it is tall and needs to union with the pet's
 // square dirty rect.
-interface DirtyRect {
+export interface DirtyRect {
   readonly x: number;
   readonly y: number;
   readonly width: number;
@@ -72,6 +84,22 @@ function unionRect(a: DirtyRect, b: DirtyRect): DirtyRect {
   const right = Math.max(a.x + a.width, b.x + b.width);
   const bottom = Math.max(a.y + a.height, b.y + b.height);
   return { x, y, width: right - x, height: bottom - y };
+}
+
+// Returns the bubble's contribution to the dirty rect, inflated 1 logical
+// pixel on all sides. A 1px stroke can land on a device-pixel just outside
+// the integer logical layout after DPR rounding, so this catches the stray
+// outline pixel without regressing the sprite-sized damage-rect discipline.
+// The tail triangle extends BUBBLE_TAIL_SIZE_PX below the box, and the
+// 1px outline stroke on its +0.5 pixel center bleeds one more pixel past
+// the fill, hence the extra +1 in the height.
+export function bubbleDirtyRect(layout: BubbleLayout): DirtyRect {
+  return {
+    x: layout.x - 1,
+    y: layout.y - 1,
+    width: layout.width + 2,
+    height: layout.height + BUBBLE_TAIL_SIZE_PX + 3,
+  };
 }
 
 const canvasEl = document.getElementById('stage');
@@ -104,6 +132,8 @@ let paused = false;
 let stage: Stage = 'baby';
 let sheet: Sheet | null = null;
 let roamState: RoamState = createRoamState(bounds(), Math.random);
+// Set by the settings "make the beaver work" button; consumed on the next tick.
+let pendingForceWork = false;
 let frameIndex = 0;
 let frameAccumulatorS = 0;
 let lastTimestampMs: number | null = null;
@@ -115,6 +145,13 @@ let lodgeSheet: Sheet | null = null;
 let hatchFrameIndex = 0;
 let hatchFrameAccumulatorS = 0;
 let quipState: { text: string; showUntilMs: number } | null = null;
+let forceFullClear = false;
+let inputQueue = createInputQueue();
+let currentCaptureMode: CaptureMode = 'hover-forward';
+// Most recent pet draw position; used by pointerdown hit-testing so the
+// click and the drawn frame never disagree on where the sprite is.
+let currentPetDrawX = 0;
+let currentPetDrawY = 0;
 
 function loadCurrentSheet(): void {
   loadSheet(stage)
@@ -179,6 +216,10 @@ window.beaverBuddy.onPetChanged((pet) => {
 
 window.beaverBuddy.onQuip((quip) => {
   quipState = { text: quip.text, showUntilMs: performance.now() + quip.durationMs };
+  // A brand-new quip may replace stale content in a previously drawn bubble
+  // region; clear the whole canvas once so no old outline/text residue
+  // survives outside the new bubble's dirty rect.
+  forceFullClear = true;
   needsDraw = true;
 });
 
@@ -198,6 +239,10 @@ window.beaverBuddy.onHatchStart(() => {
   needsDraw = true;
 });
 
+window.beaverBuddy.onForceWork(() => {
+  pendingForceWork = true;
+});
+
 window.beaverBuddy.onBoundsChanged((next) => {
   // Use the explicit bounds from the main process rather than
   // window.innerWidth/Height, which may not be atomically updated when the
@@ -211,6 +256,28 @@ window.beaverBuddy.onBoundsChanged((next) => {
   applyDpr(canvas, ctx, logicalBounds.width, logicalBounds.height, currentDpr);
   needsDraw = true;
   roamState = clampRoamStateToBounds(roamState, bounds());
+});
+
+// Input-capture layer: these listeners feed the pure input queue that the
+// rAF loop consumes once per frame. No Node/Electron APIs are touched here.
+document.addEventListener('mousemove', (event) => {
+  updateCursor(inputQueue, event.clientX, event.clientY);
+});
+
+document.addEventListener('pointerdown', (event) => {
+  if (!stageHasInteraction(stage)) return;
+  recordClickOnPet(inputQueue, event.clientX, event.clientY, currentPetDrawX, currentPetDrawY);
+});
+
+document.addEventListener('dblclick', () => {
+  if (!stageHasInteraction(stage)) return;
+  recordDoubleClick(inputQueue);
+});
+
+document.addEventListener('mouseleave', () => {
+  // Treat the cursor as outside the pet; this avoids a stale hover-capture
+  // state if the pointer leaves the window while over the beaver.
+  updateCursor(inputQueue, -1, -1);
 });
 
 // onBoundsChanged only fires when the main process detects a work-area change.
@@ -301,14 +368,17 @@ function drawHatch(state: HatchState): void {
   dirtyRect = { x: drawX - pad, y: drawY - pad, width: size, height: size };
 }
 
-function draw(): void {
-  if (dirtyRect) {
+function draw(petDrawX: number, petDrawY: number): void {
+  if (dirtyRect && !forceFullClear) {
     ctx.clearRect(dirtyRect.x, dirtyRect.y, dirtyRect.width, dirtyRect.height);
   } else {
     // Clear in logical coordinates: the context is scaled by DPR, so this
     // covers the entire physical canvas without using canvas.width/height.
     ctx.clearRect(0, 0, bounds().width, bounds().height);
   }
+  // Reset the one-shot flag so subsequent frames return to the sprite-sized
+  // damage-rect discipline.
+  forceFullClear = false;
   if (hatchState) {
     drawHatch(hatchState);
     return;
@@ -318,13 +388,7 @@ function draw(): void {
     return;
   }
   const anim = roamState.anim;
-  const shake = evolutionState ? shakeOffset(evolutionState, Math.random) : { dx: 0, dy: 0 };
-  // Integer pixel positions: pixel art must land on whole pixels, and the
-  // rounding also means sub-pixel movement between rAF ticks doesn't count
-  // as "moved" (see the moved check in frame()).
-  const drawX = Math.round(roamState.x + shake.dx);
-  const drawY = Math.round(roamState.y + shake.dy);
-  drawFrame(ctx, sheet, anim, frameIndex, drawX, drawY, {
+  drawFrame(ctx, sheet, anim, frameIndex, petDrawX, petDrawY, {
     mirror: roamState.facing === 'left',
     rotationDeg: roamState.rotation,
     scale: PET_SCALE,
@@ -335,6 +399,14 @@ function draw(): void {
   // drawn (scaled) tile, not the raw art tile.
   const tile = sheet.meta.tile * PET_SCALE;
   const pad = Math.ceil(tile / 2) + EVOLUTION_SHAKE_JITTER_PX;
+  // A row can be taller than the base tile (BL-19, e.g. adult
+  // parachute-wind) — drawFrame anchors it bottom-first, so the extra
+  // height extends upward past petDrawY. Compute the current frame's actual
+  // drawn top/height so the dirty rect still covers it; square frames
+  // (frameSh === meta.tile) reduce to the old petDrawY/tile values exactly.
+  const frameSh = frameRect(sheet.meta, anim, frameIndex).sh;
+  const frameTop = petDrawY - (frameSh - sheet.meta.tile) * PET_SCALE;
+  const frameHeight = frameSh * PET_SCALE;
   if (evolutionState && isFlashVisible(evolutionState)) {
     // White-silhouette blink: 'source-in' keeps the fill only where the
     // sprite we just drew was opaque, and clears everything else within
@@ -343,26 +415,18 @@ function draw(): void {
     ctx.save();
     ctx.globalCompositeOperation = 'source-in';
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(drawX - pad, drawY - pad, tile + 2 * pad, tile + 2 * pad);
+    ctx.fillRect(petDrawX - pad, frameTop - pad, tile + 2 * pad, frameHeight + 2 * pad);
     ctx.restore();
   }
 
-  const petSize = tile + 2 * pad;
-  let unionedRect: DirtyRect = { x: drawX - pad, y: drawY - pad, width: petSize, height: petSize };
+  const petWidth = tile + 2 * pad;
+  const petHeight = frameHeight + 2 * pad;
+  let unionedRect: DirtyRect = { x: petDrawX - pad, y: frameTop - pad, width: petWidth, height: petHeight };
 
   if (quipState) {
-    const layout = layoutBubble(quipState.text, drawX, drawY, tile, bounds());
+    const layout = layoutBubble(quipState.text, petDrawX, petDrawY, tile, bounds());
     drawBubble(ctx, layout);
-    unionedRect = unionRect(unionedRect, {
-      x: layout.x,
-      y: layout.y,
-      width: layout.width,
-      // + tail + 1: the tail triangle draws BUBBLE_TAIL_SIZE_PX below the
-      // bubble's bottom edge, and its 1px outline stroke (drawn on the +0.5
-      // pixel center) bleeds one more pixel past the fill — without the +1
-      // the clear pass leaves a stroke-residue line behind.
-      height: layout.height + BUBBLE_TAIL_SIZE_PX + 1,
-    });
+    unionedRect = unionRect(unionedRect, bubbleDirtyRect(layout));
   }
   dirtyRect = unionedRect;
 }
@@ -391,17 +455,48 @@ function frame(timestampMs: number): void {
   }
 
   if (lastTimestampMs === null) {
+    // After a document.hidden skip the overlay may have missed bounds or quip
+    // changes; clear the whole canvas once so no stale pixels from the old
+    // state survive.
+    forceFullClear = true;
     lastTimestampMs = timestampMs;
   }
   const dtSeconds = Math.min((timestampMs - lastTimestampMs) / 1000, MAX_DT_S);
   lastTimestampMs = timestampMs;
 
+  const input = consumeInput(inputQueue);
   const prev = roamState;
   // Roaming freezes locally during an evolution or hatch sequence — this
   // never touches the main-process pause state, so tray Pause stays a pure
   // user control (see evolution.ts).
-  roamState = tick(roamState, dtSeconds, bounds(), paused || evolutionState !== null || hatchState !== null, Math.random);
+  roamState = tick(roamState, dtSeconds, bounds(), paused || evolutionState !== null || hatchState !== null, Math.random, input);
+  // Manual "make the beaver work" trigger. Applied after tick and only when no
+  // hatch/evolution owns the screen; forceWorking itself no-ops mid grab/glide.
+  if (pendingForceWork) {
+    pendingForceWork = false;
+    if (evolutionState === null && hatchState === null) {
+      roamState = forceWorking(roamState, bounds(), Math.random);
+    }
+  }
+  // The typing art is adult-only. If this stage's sheet has no `type` row, never
+  // sit in the working state (mirrors how grab/glide is gated to the baby
+  // stage) — otherwise drawFrame would ask for a row that isn't there. timer 0
+  // makes the next idle tick pick a normal roam behavior immediately.
+  if (roamState.phase === 'working' && sheet !== null && !sheet.meta.rows.some((row) => row.name === 'type')) {
+    roamState = { ...roamState, phase: 'idle', anim: 'idle', timer: 0, frameHold: false };
+  }
   window.__debugRoam = roamState;
+
+  // Compute the pet's on-screen position once this frame and reuse it for
+  // hit-testing, capture-mode decisions, and drawing. shakeOffset consumes
+  // Math.random, so calling it twice per frame would desync the jitter
+  // between the hit-test and the actual draw.
+  const shake = evolutionState ? shakeOffset(evolutionState, Math.random) : { dx: 0, dy: 0 };
+  const drawX = Math.round(roamState.x + shake.dx);
+  const drawY = Math.round(roamState.y + shake.dy);
+  currentPetDrawX = drawX;
+  currentPetDrawY = drawY;
+
   // Compare rounded positions: the sprite is drawn on whole pixels, so
   // sub-pixel movement between rAF ticks changes nothing on screen — this
   // caps movement-driven redraws at (speed px/s) per second instead of one
@@ -465,12 +560,33 @@ function frame(timestampMs: number): void {
   let quipExpired = false;
   if (quipState && timestampMs >= quipState.showUntilMs) {
     quipState = null;
+    // The bubble's outline may have drawn outside the pet's normal dirty
+    // rect; clear the whole canvas once so the tail and any stray pixels are
+    // gone.
+    forceFullClear = true;
     quipExpired = true;
   }
   window.__debugQuip = quipState ? quipState.text : null;
 
+  // Determine overlay input-capture mode from the post-tick state and the
+  // cursor position captured in this frame's input. The parachute interaction
+  // is active for stages with the required anim rows (baby + adult; see
+  // stageHasInteraction); teen stays fully click-through.
+  const desiredMode = determineCaptureMode(
+    roamState,
+    input.cursorX,
+    input.cursorY,
+    drawX,
+    drawY,
+    stageHasInteraction(stage),
+  );
+  if (desiredMode !== currentCaptureMode) {
+    window.beaverBuddy.requestCaptureMode(desiredMode);
+    currentCaptureMode = desiredMode;
+  }
+
   if (moved || frameAdvanced || needsDraw || evolutionActive || hatchActive || quipExpired) {
-    draw();
+    draw(drawX, drawY);
     needsDraw = false;
   }
 }

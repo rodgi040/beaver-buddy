@@ -1,4 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { layoutBubble } from './bubble.js';
+import { BUBBLE_TAIL_SIZE_PX } from './pet-config.js';
 
 // renderer.ts executes DOM side effects at module load time, so we stub the
 // required globals before dynamically importing it in each test.
@@ -8,6 +10,8 @@ describe('renderer: HiDPI bounds and clear behavior', () => {
   let canvas: Record<string, unknown>;
   let ctx: Record<string, ReturnType<typeof vi.fn>>;
   let windowStub: Record<string, unknown>;
+  let beaverBuddy: Record<string, ReturnType<typeof vi.fn>>;
+  let documentStub: Record<string, ReturnType<typeof vi.fn>>;
 
   beforeEach(() => {
     vi.resetModules();
@@ -37,7 +41,8 @@ describe('renderer: HiDPI bounds and clear behavior', () => {
     ctx.fillStyle = '';
     ctx.strokeStyle = '';
 
-    const beaverBuddy = {
+    beaverBuddy = {
+      requestCaptureMode: vi.fn(),
       onPausedChanged: vi.fn((cb: (...args: unknown[]) => void) => {
         (listeners.paused ||= []).push(cb);
       }),
@@ -52,6 +57,9 @@ describe('renderer: HiDPI bounds and clear behavior', () => {
       }),
       onBoundsChanged: vi.fn((cb: (...args: unknown[]) => void) => {
         (listeners.bounds ||= []).push(cb);
+      }),
+      onForceWork: vi.fn((cb: (...args: unknown[]) => void) => {
+        (listeners.forceWork ||= []).push(cb);
       }),
     };
 
@@ -75,10 +83,15 @@ describe('renderer: HiDPI bounds and clear behavior', () => {
     canvas = new MockHTMLCanvasElement();
 
     vi.stubGlobal('HTMLCanvasElement', MockHTMLCanvasElement);
-    vi.stubGlobal('document', {
+    documentStub = {
       getElementById: vi.fn(() => canvas),
       hidden: false,
-    });
+      addEventListener: vi.fn((event: string, handler: () => void) => {
+        (listeners[`document:${event}`] ||= []).push(handler);
+      }),
+    };
+
+    vi.stubGlobal('document', documentStub);
     vi.stubGlobal('window', windowStub);
     vi.stubGlobal('requestAnimationFrame', windowStub.requestAnimationFrame);
     vi.stubGlobal('performance', { now: vi.fn(() => 0) });
@@ -198,5 +211,26 @@ describe('renderer: HiDPI bounds and clear behavior', () => {
     rafCallback(32);
 
     expect(windowStub.__debugPet).toEqual({ level: 1, stage: 'baby', evolving: false });
+  });
+
+  it('exposes requestCaptureMode and registers input-capture listeners', async () => {
+    await import('./renderer.js');
+
+    expect(beaverBuddy.requestCaptureMode).toBeDefined();
+    expect(documentStub.addEventListener).toHaveBeenCalledWith('mousemove', expect.any(Function));
+    expect(documentStub.addEventListener).toHaveBeenCalledWith('pointerdown', expect.any(Function));
+    expect(documentStub.addEventListener).toHaveBeenCalledWith('dblclick', expect.any(Function));
+    expect(documentStub.addEventListener).toHaveBeenCalledWith('mouseleave', expect.any(Function));
+  });
+
+  it('inflates the bubble dirty rect by 1px on all sides including tail bleed', async () => {
+    const { bubbleDirtyRect } = await import('./renderer.js');
+    const layout = layoutBubble('dam', 100, 100, 32, { width: 2000, height: 2000 });
+    const rect = bubbleDirtyRect(layout);
+
+    expect(rect.x).toBe(layout.x - 1);
+    expect(rect.y).toBe(layout.y - 1);
+    expect(rect.width).toBe(layout.width + 2);
+    expect(rect.height).toBe(layout.height + BUBBLE_TAIL_SIZE_PX + 3);
   });
 });

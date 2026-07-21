@@ -98,6 +98,7 @@ describe('createSettingsHandlers', () => {
         changed.push(next);
       },
       onProgressReset: vi.fn().mockResolvedValue(undefined),
+      onForceWork: vi.fn(),
       getUsageSources: () => usageSnapshot,
       onUsageEnabledChanged: (next) => {
         usageEnabledCalls.push(next);
@@ -152,8 +153,17 @@ describe('createSettingsHandlers', () => {
     await expect(handlers.disconnect(fakeEvent, { target: 'stripe' })).resolves.toEqual({ ok: false, error: 'unauthorized' });
     await expect(handlers.resetProgress(fakeEvent)).resolves.toEqual({ ok: false, error: 'unauthorized' });
     await expect(handlers.connectUsage(fakeEvent, { target: 'claude' })).resolves.toEqual({ ok: false, error: 'unauthorized' });
+    expect(handlers.forceWork(fakeEvent)).toEqual({ ok: false, error: 'unauthorized' });
     expect(changed).toHaveLength(0);
     expect(d.onProgressReset).not.toHaveBeenCalled();
+    expect(d.onForceWork).not.toHaveBeenCalled();
+  });
+
+  it('forceWork forwards to onForceWork for an authorized sender', () => {
+    const d = deps();
+    const handlers = createSettingsHandlers(d, () => true);
+    expect(handlers.forceWork(fakeEvent)).toEqual({ ok: true });
+    expect(d.onForceWork).toHaveBeenCalledTimes(1);
   });
 
   it('readStatus returns mode/connected booleans plus per-source usage, never secrets', () => {
@@ -326,6 +336,7 @@ describe('openSettingsWindow', () => {
       }),
       onSettingsChanged: () => {},
       onProgressReset: vi.fn().mockResolvedValue(undefined),
+      onForceWork: vi.fn(),
       getUsageSources: () => ({
         claude: { enabled: false, logsFound: false, connected: false, lifetimeTokens: 0, todayTokens: 0 },
         codex: { enabled: false, logsFound: false, connected: false, lifetimeTokens: 0, todayTokens: 0 },
@@ -349,6 +360,93 @@ describe('openSettingsWindow', () => {
     errorSpy.mockRestore();
   });
 
+  it('a late loadFile rejection does not clobber a replacement window opened in the meantime', async () => {
+    // settingsWindow is module-scoped state that outlives individual `it`
+    // blocks in this file — close out whatever window a previous test left
+    // tracked so this one starts from a clean slate.
+    const priorWin = vi.mocked(BrowserWindow).mock.results.at(-1)?.value as
+      | { on: ReturnType<typeof vi.fn> }
+      | undefined;
+    const priorClosedHandler = priorWin?.on.mock.calls.find((call: unknown[]) => call[0] === 'closed')?.[1] as
+      | (() => void)
+      | undefined;
+    priorClosedHandler?.();
+    const callsBefore = vi.mocked(BrowserWindow).mock.calls.length;
+
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    let rejectFirstLoad: (error: Error) => void = () => {};
+    const firstWin = {
+      loadFile: vi.fn().mockImplementation(
+        () => new Promise((_resolve, reject) => { rejectFirstLoad = reject; }),
+      ),
+      on: vi.fn(),
+      focus: vi.fn(),
+      isDestroyed: () => false,
+      destroy: vi.fn(),
+      webContents: {},
+    };
+    const secondWin = {
+      loadFile: vi.fn().mockResolvedValue(undefined),
+      on: vi.fn(),
+      focus: vi.fn(),
+      isDestroyed: () => false,
+      destroy: vi.fn(),
+      webContents: {},
+    };
+    vi.mocked(BrowserWindow).mockImplementationOnce(function () {
+      return firstWin;
+    });
+    vi.mocked(BrowserWindow).mockImplementationOnce(function () {
+      return secondWin;
+    });
+
+    const deps: SettingsWindowDeps = {
+      stateDir: '/unused',
+      keychainService: 'svc',
+      getSettings: () => ({
+        mode: 'tokens',
+        stripeConnected: false,
+        revenuecatConnected: false,
+        claudeEnabled: false,
+        codexEnabled: false,
+      }),
+      onSettingsChanged: () => {},
+      onProgressReset: vi.fn().mockResolvedValue(undefined),
+      onForceWork: vi.fn(),
+      getUsageSources: () => ({
+        claude: { enabled: false, logsFound: false, connected: false, lifetimeTokens: 0, todayTokens: 0 },
+        codex: { enabled: false, logsFound: false, connected: false, lifetimeTokens: 0, todayTokens: 0 },
+      }),
+      onUsageEnabledChanged: () => {},
+    };
+
+    openSettingsWindow(deps);
+    expect(firstWin.loadFile).toHaveBeenCalled();
+
+    // The user closes the first window before its loadFile() ever settles.
+    const closedHandler = firstWin.on.mock.calls.find(([event]) => event === 'closed')?.[1] as (() => void) | undefined;
+    closedHandler?.();
+
+    // A second, genuine open creates a replacement window.
+    openSettingsWindow(deps);
+    expect(secondWin.loadFile).toHaveBeenCalled();
+
+    // The first window's loadFile() now rejects, late — after the replacement is live.
+    rejectFirstLoad(new Error('load failed'));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(errorSpy).toHaveBeenCalledWith('Failed to load settings window:', expect.any(Error));
+    expect(firstWin.destroy).toHaveBeenCalledTimes(1);
+
+    // The replacement must still be treated as the live settings window: a
+    // third open focuses it rather than creating a stray duplicate.
+    openSettingsWindow(deps);
+    expect(secondWin.focus).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(BrowserWindow).mock.calls.length).toBe(callsBefore + 2);
+
+    errorSpy.mockRestore();
+  });
+
   it('pins the measured content height, useContentSize, fixed-size flags, and platform icon', () => {
     const deps: SettingsWindowDeps = {
       stateDir: '/unused',
@@ -362,6 +460,7 @@ describe('openSettingsWindow', () => {
       }),
       onSettingsChanged: () => {},
       onProgressReset: vi.fn().mockResolvedValue(undefined),
+      onForceWork: vi.fn(),
       getUsageSources: () => ({
         claude: { enabled: false, logsFound: false, connected: false, lifetimeTokens: 0, todayTokens: 0 },
         codex: { enabled: false, logsFound: false, connected: false, lifetimeTokens: 0, todayTokens: 0 },
