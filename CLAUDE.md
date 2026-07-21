@@ -206,19 +206,17 @@ fixed or documented as known limitations.
 - ADRs (`docs/adr/NNN-title.md`) are for costly or hard-to-reverse cross-cutting
   decisions (renderer approach, state schema, asset pipeline) — not every choice.
 
-## Planning & Flightplan (local-only)
+## Planning & docs — `.planning/` (committed) + `.flightplan/` (local master)
 
-Detailed planning lives in **local, gitignored files** — linked here so every
-agent session can find them. They exist on the maintainer's machine only; never
-`git add` them, and never copy their contents into committed docs or PRs.
+The **team-facing planning docs are committed under `.planning/`** — agents and
+contributors read them there (see `AGENTS.md` → "Project planning docs"):
+`KICKOFF.md` (start), `STATE.md`, `ROADMAP.md` (milestones/phases/dependencies),
+`Planning/Milestone-N/…`, `Meetings/`, `Reference/` (item specs #1–#64), `Archive/`.
 
-- `.fp-new-projekt/windows-native-flight-plan.md` — the detailed item plan
-  (Windows port #1–#62 done; next: #26 MRR mode, #8–#18 animations, #7 final
-  adult art).
-- Flightplan state lives under `.flightplan/` (one directory, gitignored):
-  `STATE.md` (digest: Now/Next), `ROADMAP.md` (milestones/phases),
-  `HANDOFF.md` (session resume), `NOTE.md` (idea/task inbox), plus the
-  `Planning/` (Milestone/Phase/Wave) and `Debugging/` templates.
+The **Flightplan master lives under `.flightplan/` — local and gitignored** on the
+maintainer's machine. Rodgi edits there and **syncs into `.planning/`**; agents must
+never edit `.planning/` planning state directly and never `git add` `.flightplan/`.
+
 - The Flightplan workflow runs via `/fp-status`, `/fp-note`, `/fp-pause`,
   `/fp-resume`. The skills live locally under `.claude/skills/` and
   `.agents/skills/` (gitignored agent tooling, not project content) and are
