@@ -3,80 +3,72 @@
 > Full resume context. Written by `/fp-pause`, read by `/fp-resume`. `STATE.md` is the short digest;
 > this file is the complete picture so the next session loses no context.
 
-**Last updated:** 2026-07-21 (pi-Session Ende: Re-Onboarding + Zyklus-1-Planung komplett,
-Contributor-Workflow etabliert, PR #40 CI-grün → wartet auf Review)
-
-## 🏁 Session-Abschluss-Status
-- **PR #40** (vendored skills + Zyklus-1-Planning → ai-beavers/main): **CI ubuntu + windows GRÜN ✅**,
-  aber `REVIEW_REQUIRED` — **Review/Merge durch Gw3i oder Org-Admin nötig** (Rodgi kann nicht
-  selbst approven). Team kann schon jetzt vom Branch `chore/zyklus1-planning` lesen.
-- **Multiplattform-Beschluss** (Windows + macOS nativ) eingearbeitet (ADR-002-Update, M6/P4).
-- **KICKOFF-AGENT-PROMPTS.md** erstellt: ready-to-paste Start-Prompts für Vlady (M5/P1),
-  Jurij (M3/P1), Rodgi (M4/P1) — Rodgi schickt sie dem Team.
-- Fork-main gesynct (`3724c7f`+).
-
-## ⚡ Rollen-Split (Owner-Beschluss 2026-07-21, aktualisiert)
-
-- **pi = ausschließlich Rodgi** (Runtime/Logik, M4, M6)
-- **Claude Code = Vlady & Jurij, in allen Milestones** (Assets via Comfy-Cloud-MCP + Runtime)
-- Team-Matrix: **M3 = Jurij** (Recording Agent) · **M4 = Rodgi** (Level/XP/Profil) ·
-  **M5 = Vlady** (Animationen) · **M6 = Rodgi** (Contribution & Release)
-- Regel: genau ein Accountable pro Phase; Blocker stehen im `Blocked by:`-Feld jeder
-  PHASE.md + Dependency-Tabelle in ROADMAP.md.
+**Last updated:** 2026-07-21 (pi, fp-pause — Planungssession sauber beendet)
 
 ## current_state
-**Re-Onboarding done.** `.fp-new-projekt/` ist aufgelöst:
-`Meetings/2026-07-21-planung/` (transcript-raw, summary, animations-rohtext),
-`Reference/windows-native-flight-plan.md` (Items #1–#64), `Archive/` (alte phase-*/plans/).
-ROADMAP neu: Zyklus-1-Exit (App downloadbar · 100 Downloads · 7 Contributors), M1–M6,
-Dependency-Übersicht. Alte M3/M4 aufgelöst: #19–#23 + #26/#27 + #28–#32 → post-Z1;
-#24/#25 → M4/P1; #33–#45 → M6.
-**M2/P3 Fallschirm: PAUSIERT** (WAVE-1 ✅, WAVE-2 ✅, WAVE-3 offen).
-**Git/PRs (Stand, unverändert):** BL-17 = 8 Commits; PR #33 (C2–C4) offen; PR #28/#29
-offen; Branch `feature/animation-authoring-docs` (`3bb1892`) ohne PR. Suite: 500 Tests grün.
+**Zyklus 1 ist vollständig geplant, das Team kann starten.** Re-Onboarding von `.flightplan/`
+abgeschlossen, Planung committed unter `.planning/` (Team-Snapshot; `.flightplan/` bleibt lokaler
+gitignorter Master). **PR #40** (vendored skills + Zyklus-1-Planning → `ai-beavers/main`):
+**CI ubuntu + windows GRÜN ✅, Status: `REVIEW_REQUIRED`** — Merge wartet auf Approval
+(Gw3i/Org-Admin; Rodgi kann nicht selbst approven). Branch `chore/zyklus1-planning` auf
+upstream ist der aktuelle Stand (`4b55734`); Fork-main gesynct. Working Tree sauber.
+**M2/P3 Fallschirm:** weiterhin offiziell pausiert (WAVE-1/2 ✅ upstream gemergt via PR #33,
+WAVE-3 Polish offen → Resume später, Claude Code).
 
-## Neuplanung Zyklus 1 (2026-07-21, mit Owner finalisiert)
-- **M3 Recording Agent & Benachrichtigungen** (Jurij, 2–3 W): P1 Event-Erkennung
-  (Hörder-Logik) → P2 Darstellung (Bubble/Sign) → P3 Security-Gate. Architektur-Regel:
-  Event-Erkennung und Animation strikt getrennt; kein manuelles Triggern durch Nutzer.
-- **M4 Level-, XP- & Profil-System** (Rodgi, 3–4 W, parallel): P1 Token-Tracking
-  (täglich aggregiert/pro Modell, Input+Output ohne Cache) → P2 XP/Level-Modell
-  (1–32, 1–16 ≈ Baby→Teen) → P3 Persistenz+Profil (Name, Achievements 7/30 Tage) →
-  P4 Character-Map-JSON. Lokal, keine Auth in Z1.
-- **M5 Animationen** (Vlady, ~1 W/Animation): Z1-Scope = P1–P5 (Baum, Coding, Drinks,
-  Schlaf, Stretch); P6–P12 post-Z1. Assets können sofort starten (M2/P1–P2 ✅);
-  Runtime-Trigger level-gekoppelt ← M4/P2.
-- **M6 Contribution & Release** (Rodgi, ~2 W): P1 Doku ← M3/M4 · P2 Settings/Tray ·
-  P3 QA ← M5-Z1 · P4 Release-Pipeline → Z1-Exit.
-- Zeithorizont: ~6–8 Wochen bei paralleler Arbeit.
+## completed (Session 2026-07-21)
+- **Re-Onboarding:** `.fp-new-projekt/` aufgelöst → `Meetings/2026-07-21-planung/`,
+  `Reference/windows-native-flight-plan.md`, `Archive/`; alle Pfad-Referenzen aktualisiert;
+  `.gitignore` bereinigt; Debugging-README gefixt; NOTE.md ent-dublettiert (F1/F2 erledigt)
+- **Zyklus 1 definiert:** Exit-Kriterien (App downloadbar · 100 Downloads · 7 Contributors);
+  ROADMAP mit M1–M6 + Team-Matrix + Dependency-Übersicht; 11 neue PHASE.md-Stubs mit
+  Pflichtfeldern (`Accountable`, `Blocked by:`, `Blocks:`, `Dauer`); M2/P4–P15 → M5/P1–P12 umgezogen
+- **Team-Matrix:** Jurij = M3 (Recording Agent) · Rodgi = M4 (Level/XP) + M6 (Release) ·
+  Vlady = M5 (Animationen) · Agenten-Regel: **pi = nur Rodgi, Claude Code = Vlady & Jurij**
+- **XP-/Level-Spec** (`Planning/Milestone-4/Phase-2/XP-LEVEL-MODEL.md`): nur echte
+  Input+Output-Tokens (Cache strikt raus), 5 XP/1k, Kurve kumulativ quadratisch TOTAL 120.000
+  (L32 ≈ Tag 60, Referenz 400k Tokens/Tag), **γ=2** Modell-Gewichtung via Artificial Analysis
+  Intelligence Index (Seed-Tabelle 26 Modelle aus Owner-Screenshot, REF=45, Top 1,78× / Floor 0,5×),
+  Lebenszeit-Tracking getrennt von XP
+- **5 Lebenszyklen:** Baby L1–4 · junges Baby L5–8 · Jugendlicher L9–16 · älterer Jugendlicher
+  L17–24 · Erwachsener L25–32 → M5/P12 als Stufen-Art-Paket in Z1-Scope gezogen
+- **M3:** Herdr als Erkennungslogik (statt eigener Detektion) · **M4/P1:** TokScale-**Logik**
+  1:1 für alle Harnesses (Claude Code, Codex, pi), eigener Reader, kein Tool-Dependency
+- **Multiplattform-Beschluss** (Teambesprechung): Windows + macOS nativ; ADR-002-Update (M1),
+  M6/P4 mit macOS-Targets/Signing/CI-Runner
+- **Contributor-Workflow:** Merge upstream/main (41 Commits: BL-17, BL-18/19 Typing-Animation),
+  Konflikte sauber aufgelöst (package.json Union, AGENTS.md Guardrails + .planning-Sektion),
+  Verifikation tsc/eslint/573 Tests ✓; Direct-Push → Branch-Protection (PR + CI erzwungen) →
+  **PR #40 erstellt**, CI grün, REVIEW_REQUIRED; `KICKOFF.md` + `KICKOFF-AGENT-PROMPTS.md`
+- **Namensfix:** Vady → **Vlady** (21 Dateien + PLAN.md, verifiziert 0 Rest-Treffer)
 
 ## remaining (in Reihenfolge)
-1. **Team-Start (alle parallel, „Blocked by: none"):** M3/P1 (Jurij) · M4/P1 (Rodgi) ·
-   M5/P1-Assets (Vlady). Detail-Definition jeder Phase zu Phasenbeginn mit Owner.
-2. **M2/P3-Resume einplanen** (Claude Code: WAVE-3/P1 Weiß-Artefakte + P3a struggle-b/c;
-   pi/Rodgi: P2 Glide-Scale, P4 Wind-Drift, P3b Zufallsplayer; Spec: `Milestone-2/Phase-3/Waves/WAVE-3.md`)
-3. ~~Org-Admin: PR #28/#29/#33 mergen~~ ✅ erledigt (gemergt, Stand 2026-07-21); **PR #40 (Planning) wartet auf CI + Review/Merge**
-4. PR für `feature/animation-authoring-docs` erstellen (Branch prüfen: Inhalte ggf. schon via upstream drin)
-5. **M5/P2 Coding-Animation neu definieren:** Upstream hat BL-18/BL-19 (Typing/Working-Animation + Settings-Trigger) bereits gebaut — Scope-Abgleich zu Phasenbeginn mit Rodgi + Vlady
+1. **Rodgi:** Review für PR #40 anfragen (Gw3i/Org-Admin) → nach Merge: **Team-Dispatch**
+   (Prompts aus `.planning/KICKOFF-AGENT-PROMPTS.md` an Vlady + Jurij)
+2. **Team-Start (parallel, „Blocked by: none"):** Jurij = M3/P1 (Herdr-Evaluierung) ·
+   Rodgi = M4/P1 (Log-Reader TokScale-Logik) · Vlady = M5/P1 (Baum-Assets)
+3. **Offene Owner-Entscheide (NOTE.md):** Apple-Developer-Account (~99 $/Jahr) ·
+   macOS-Testhardware im Team · macOS gleichwertig zum Z1-Launch? · #3/#4b/#63/#64
+4. **Später:** M2/P3-WAVE-3-Resume (Claude Code) · M5/P2-Scope gegen BL-18/19 abgleichen
+   (Typing-Animation existiert bereits upstream) · `feature/animation-authoring-docs`-PR prüfen
+   · BL-7-Verdict · Kalibrierung XP-Konstante nach 1 Woche M4/P1-Daten
 
-## decisions (Owner, verbatim) — neue oben
-- „Contributor-Zugang da → auf main pushen/mergen versuchen“ → Ergebnis: Branch-Protection erzwingt PR + CI; Workflow jetzt: Branch direkt auf `upstream` pushen + PR gegen `ai-beavers/main` (kein Fork-Umweg mehr nötig) — 2026-07-21
+## decisions (Owner, verbatim)
 - „pi = nur ich; Vlady & Jurij überall mit Claude Code" — 2026-07-21
 - „Blocker direkt in der Flightplan-Doku notieren, welche Phase welche blockiert" — 2026-07-21
-- Zyklus-1-Priorisierung: Recording Agent (zentral) → XP/Level → Animationen gestaffelt → Release — 2026-07-21
-- Ältere Owner-Entscheide (Fallschirm-Interaktion, 1,5× Glide, struggle-Varianten,
-  Contribution-PR-Modell, `--no-ff` + Tags): siehe Archiv-HANDOFF-History bzw. WAVE-3.md
+- „XP und Lebenszeit getrennt; Hauptlogik = XP-Punkte → Level" — 2026-07-21
+- „Nur Input- und Output-Tokens zählen, kein Cache/Cache-Read" — 2026-07-21
+- „γ = 2" (Spreizung Modell-Gewichtung; Wert = Intelligenz, nicht Token-Preis) — 2026-07-21
+- „5 Lebenszyklen: Baby, junges Baby, Jugendlicher, etwas älterer Jugendlicher, Erwachsener" — 2026-07-21
+- „TokScale-Logik 1:1 nutzen für das Fetchen der lokalen Token-Logs, alle Coding-Agent-Harnesses" — 2026-07-21
+- „Für die Erkennung wollen wir Herdr nutzen" (Open-Source-Terminal-Übersichtstool) — 2026-07-21
+- „Elektron-App direkt als Multiplattform-App nativ für Windows und macOS" (Teambesprechung) — 2026-07-21
+- „Fallschirm-Resume: erst später!" — 2026-07-21
 
 ## blockers
-none — Hinweise: Comfy-Cloud-MCP nur in Claude Code; `npx` in pi geblockt → lokale
-`./node_modules/.bin/`-Binaries; CDP-Live-Screenshots hingen in pi → manuell durch Owner.
+- **PR #40: REVIEW_REQUIRED** — Merge braucht Approval (Gw3i/Org-Admin). Kein Code-Blocker;
+  Team kann schon vom Branch `chore/zyklus1-planning` lesen.
 
 ## next_action
-1. **Rodgi:** Review für PR #40 anfragen (Gw3i/Org-Admin) → nach Merge: Team-Dispatch
-   (Prompts aus `KICKOFF-AGENT-PROMPTS.md` an Vlady + Jurij schicken)
-2. **Team-Kickoff Zyklus 1:** Jurij = M3/P1 (Herdr), Rodgi = M4/P1 (Log-Reader),
-   Vlady = M5/P1-Assets (Baum) — alle „Blocked by: none"
-3. **Offene Owner-Entscheide (NOTE.md):** Apple-Developer-Account (~99 $/Jahr)?
-   macOS-Testhardware im Team? macOS-Installer gleichwertig zum Z1-Launch?
-4. **Später:** M2/P3-WAVE-3-Resume (Fallschirm-Polish, Claude Code); M5/P2-Scope
-   gegen BL-18/19 abgleichen; `feature/animation-authoring-docs`-PR prüfen
+**Review für PR #40 anfragen** (CI grün) → nach Merge: Prompts aus
+`.planning/KICKOFF-AGENT-PROMPTS.md` an Vlady (M5/P1) und Jurij (M3/P1) schicken;
+Rodgi startet M4/P1 via `/fp-resume`.

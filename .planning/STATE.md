@@ -2,10 +2,10 @@
 
 > Where the project stands now. Update after every meaningful action.
 
-**Now:** **Re-Onboarding & Zyklus-1-Neuplanung done (2026-07-21)** — `.fp-new-projekt/` migriert (Meetings/Reference/Archive), ROADMAP mit Zyklus-1-Exit-Kriterien + Team-Matrix + Dependency-Übersicht neu geschnitten (M1–M6). **M2/P3 Fallschirm PAUSIERT** (WAVE-3, Resume via Claude Code).
+**Now:** **Zyklus 1 komplett geplant, Team startklar** · PR #40 (Planning → ai-beavers/main): CI grün, **wartet auf Review** · M2/P3 Fallschirm pausiert (WAVE-3 offen)
 **Progress:** M1 ✅ · M2 P1/P2 ✅ (P3 pausiert) · M3–M6 geplant, nicht gestartet · Zyklus-1-Exit-Kriterien: App downloadbar · 100 Downloads · 7 Contributors (aktuell 3: Rodgi, Vlady, Jurij)
-**Blockers:** none
-**Last:** Session 2026-07-21 (2/2): **Contributor-Zugang zu ai-beavers ✅** — Direct-Push auf main scheitert an Branch-Protection (PR + CI-Check erforderlich) → **PR #40** (vendored skills + Zyklus-1-Planning) gegen upstream offen, CI läuft. Fork-main gesynct (`a12b6ca`). **Upstream hat sich bewegt:** PR #28/#29/#33 gemergt ✅ (Fallschirm C1–C4 drin) + **BL-18/BL-19: Typing/Working-Animation mit Settings-Trigger bereits gebaut** ⚠️ (Overlap mit M5/P2 — Phase zu Phasenbeginn neu definieren). Merge-Konflikte (package.json Union, AGENTS.md Guardrails+.planning) sauber aufgelöst, 573 Tests ✓
+**Blockers:** PR #40 — REVIEW_REQUIRED (Approval Gw3i/Org-Admin nötig; kein Code-Blocker)
+**Last:** Session 2026-07-21: Re-Onboarding + Zyklus-1 komplett (XP-Spec γ=2, 5 Lebenszyklen, Herdr, TokScale-Logik, Multiplattform Win+macOS) · Contributor-Workflow (PR #40, CI grün, REVIEW_REQUIRED) · KICKOFF + Agent-Prompts · Namensfix Vlady · fp-pause
 **Next:** ① Review für PR #40 anfragen (CI grün, REVIEW_REQUIRED) → ② nach Merge: Team-Dispatch (Prompts in KICKOFF-AGENT-PROMPTS.md) → ③ Team-Start: **M3/P1 (Jurij) ∥ M4/P1 (Rodgi) ∥ M5/P1-Assets (Vlady)** — alle „Blocked by: none". Offene Owner-Entscheide: Apple-Account, Mac-Testhardware, macOS-Z1-Priorität (NOTE.md).
 
 ## Recent decisions
