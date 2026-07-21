@@ -14,7 +14,7 @@
 | Person | Rolle | Agent |
 |---|---|---|
 | Rodgi (Owner) | State-Logik-Definition, Features, Review, Owner-Entscheide | **pi (nur Rodgi)** |
-| Vady | Sprite-Animationen | **Claude Code** |
+| Vlady | Sprite-Animationen | **Claude Code** |
 | Jurij | Event-Logik, hart Technisches | **Claude Code** |
 
 Regel: genau **ein Accountable pro Phase**; Agenten arbeiten nur für den Phase-Owner.
@@ -25,7 +25,7 @@ Regel: genau **ein Accountable pro Phase**; Agenten arbeiten nur für den Phase-
 - [x] Phase 1 — Windows-Infrastruktur (#1–#6)
 - [x] Phase 2 — Runde 2 Parität & Feinschliff (#46–#62)
 
-### M2 — Asset-Pipeline & Animationen · läuft (Vady + Rodgi)
+### M2 — Asset-Pipeline & Animationen · läuft (Vlady + Rodgi)
 - [x] Phase 1 — PixiJS Puppet Studio (BL-14)
 - [x] Phase 2 — ComfyUI „PixelArt Builder"
 - [ ] Phase 3 — Fallschirm-Drop · **PAUSIERT** (WAVE-1/2 ✅, WAVE-3 offen → Resume via Claude Code, Spec `Milestone-2/Phase-3/Waves/WAVE-3.md`)
@@ -41,7 +41,7 @@ Regel: genau **ein Accountable pro Phase**; Agenten arbeiten nur für den Phase-
 - [ ] Phase 3 — Persistenz & Profil (Namensgebung, Achievements) · ← M4/P2
 - [ ] Phase 4 — Character-Map-JSON (Level↔Sprites↔Animationen) · ← M2/P1–P2 ✅
 
-### M5 — Animationen (Rest) · Z1 gestaffelt (**Vady**, ~1 W/Animation)
+### M5 — Animationen (Rest) · Z1 gestaffelt (**Vlady**, ~1 W/Animation)
 - [ ] P1 Baum (#15) · P2 Coding (#8) · P3 Drinks (#9) · P4 Schlaf (#10) · P5 Stretch (#11) — **Z1-Scope**
 - [ ] P12 Stufen-Art-Paket: junges Baby, älterer Jugendlicher, Erwachsener (#7) — **Z1 (nachgezogen: 5 Lebenszyklen)**
 - [ ] P6–P11 (Sprechen, Sport, Stock, Toilette, Handy, Meeting) — **post-Z1**

@@ -1,4 +1,4 @@
-# Kickoff — Beaver Buddy · Zyklus 1 (Team: Rodgi, Vady, Jurij)
+# Kickoff — Beaver Buddy · Zyklus 1 (Team: Rodgi, Vlady, Jurij)
 
 > Lies das zuerst. Danach: `ROADMAP.md` → dein `Planning/Milestone-N/MILESTONE.md` → deine Phase.
 
@@ -13,9 +13,9 @@ Token → XP → Level 1–32 → 5 Lebenszyklen.
 |---|---|---|---|
 | **Jurij** (Event-Logik, Technik) | M3 Recording Agent | Claude Code | **M3/P1:** Herdr evaluieren + integrieren |
 | **Rodgi** (State-Logik, Features, Review) | M4 Level/XP/Profil + M6 Release | pi | **M4/P1:** Log-Reader (TokScale-Logik, nur echte Input/Output-Tokens) |
-| **Vady** (Sprite-Animationen) | M5 Animationen | Claude Code | **M5/P1:** Baum-Assets (WAVE-1) |
+| **Vlady** (Sprite-Animationen) | M5 Animationen | Claude Code | **M5/P1:** Baum-Assets (WAVE-1) |
 
-Regeln: **Ein Accountable pro Phase.** pi nutzt nur Rodgi; Vady & Jurij arbeiten überall mit
+Regeln: **Ein Accountable pro Phase.** pi nutzt nur Rodgi; Vlady & Jurij arbeiten überall mit
 Claude Code. Agenten arbeiten nur auf Anweisung des jeweiligen Phase-Owners.
 
 ## 📁 Wo liegt was

@@ -4,7 +4,7 @@
 
 **Status:** in-progress (P3 pausiert seit 2026-07-21 — Re-Onboarding/Zyklus-1-Neuplanung; Resume via `/fp-resume` in Claude Code, Spec: `Phase-3/Waves/WAVE-3.md`)
 
-**Accountable:** Vady (Assets) + Rodgi · **Agent:** Claude Code (Assets), pi (Runtime, nur Rodgi)
+**Accountable:** Vlady (Assets) + Rodgi · **Agent:** Claude Code (Assets), pi (Runtime, nur Rodgi)
 
 ## Phases
 > Konvention (Owner-Beschluss 2026-07-20): eine Animation pro Phase, 1–2 Waves

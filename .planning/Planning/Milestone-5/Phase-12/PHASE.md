@@ -21,7 +21,7 @@ Z1-Scope gezogen (Nutzer erreichen Erwachsener ~Tag 37, innerhalb des Z1-Horizon
 - Abhängig vom angepassten ComfyUI-Workflow (M2/P2 ✅) — deshalb als letzte Phase des Milestones einsortiert.
 - Aktueller Placeholder: byte-deterministischer Teen-Upscale (npm run assets:adult-placeholder), dokumentiert in `assets/STYLE.md` + `docs/asset-gallery.md`.
 
-**Accountable:** Vady (Assets via Claude Code; Runtime: Rodgi + pi)
+**Accountable:** Vlady (Assets via Claude Code; Runtime: Rodgi + pi)
 **Zyklus:** Zyklus 1 (nachgezogen 2026-07-21)
 **Blocked by:** M2/P2 ✅ (Workflow steht) · Verdrahtung der Stufen zusätzlich: M4/P2 + M4/P4 (Level-Grenzen + Character-Map)
 **Dauer (grob):** ~2 Wochen (3 Stufen-Sets statt 1)

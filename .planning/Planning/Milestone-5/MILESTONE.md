@@ -6,7 +6,7 @@
 
 **Status:** not-started
 
-**Accountable:** Vady · **Agent:** Claude Code (Assets), pi (Runtime, nur Rodgi) · **Dauer (grob):** ~1 Woche pro Animation
+**Accountable:** Vlady · **Agent:** Claude Code (Assets), pi (Runtime, nur Rodgi) · **Dauer (grob):** ~1 Woche pro Animation
 
 ## Zyklus-1-Scope (Owner-Beschluss 2026-07-21)
 - **In Z1:** P1–P5 (Baum, Coding, Drinks, Schlaf, Stretch) — deckt Alltags-Loop + Level-8-Interaktionen ab

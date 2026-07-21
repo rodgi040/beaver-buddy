@@ -11,16 +11,16 @@ Contributor-Workflow etabliert, PR #40 CI-grün → wartet auf Review)
   aber `REVIEW_REQUIRED` — **Review/Merge durch Gw3i oder Org-Admin nötig** (Rodgi kann nicht
   selbst approven). Team kann schon jetzt vom Branch `chore/zyklus1-planning` lesen.
 - **Multiplattform-Beschluss** (Windows + macOS nativ) eingearbeitet (ADR-002-Update, M6/P4).
-- **KICKOFF-AGENT-PROMPTS.md** erstellt: ready-to-paste Start-Prompts für Vady (M5/P1),
+- **KICKOFF-AGENT-PROMPTS.md** erstellt: ready-to-paste Start-Prompts für Vlady (M5/P1),
   Jurij (M3/P1), Rodgi (M4/P1) — Rodgi schickt sie dem Team.
 - Fork-main gesynct (`3724c7f`+).
 
 ## ⚡ Rollen-Split (Owner-Beschluss 2026-07-21, aktualisiert)
 
 - **pi = ausschließlich Rodgi** (Runtime/Logik, M4, M6)
-- **Claude Code = Vady & Jurij, in allen Milestones** (Assets via Comfy-Cloud-MCP + Runtime)
+- **Claude Code = Vlady & Jurij, in allen Milestones** (Assets via Comfy-Cloud-MCP + Runtime)
 - Team-Matrix: **M3 = Jurij** (Recording Agent) · **M4 = Rodgi** (Level/XP/Profil) ·
-  **M5 = Vady** (Animationen) · **M6 = Rodgi** (Contribution & Release)
+  **M5 = Vlady** (Animationen) · **M6 = Rodgi** (Contribution & Release)
 - Regel: genau ein Accountable pro Phase; Blocker stehen im `Blocked by:`-Feld jeder
   PHASE.md + Dependency-Tabelle in ROADMAP.md.
 
@@ -43,7 +43,7 @@ offen; Branch `feature/animation-authoring-docs` (`3bb1892`) ohne PR. Suite: 500
   (täglich aggregiert/pro Modell, Input+Output ohne Cache) → P2 XP/Level-Modell
   (1–32, 1–16 ≈ Baby→Teen) → P3 Persistenz+Profil (Name, Achievements 7/30 Tage) →
   P4 Character-Map-JSON. Lokal, keine Auth in Z1.
-- **M5 Animationen** (Vady, ~1 W/Animation): Z1-Scope = P1–P5 (Baum, Coding, Drinks,
+- **M5 Animationen** (Vlady, ~1 W/Animation): Z1-Scope = P1–P5 (Baum, Coding, Drinks,
   Schlaf, Stretch); P6–P12 post-Z1. Assets können sofort starten (M2/P1–P2 ✅);
   Runtime-Trigger level-gekoppelt ← M4/P2.
 - **M6 Contribution & Release** (Rodgi, ~2 W): P1 Doku ← M3/M4 · P2 Settings/Tray ·
@@ -52,16 +52,16 @@ offen; Branch `feature/animation-authoring-docs` (`3bb1892`) ohne PR. Suite: 500
 
 ## remaining (in Reihenfolge)
 1. **Team-Start (alle parallel, „Blocked by: none"):** M3/P1 (Jurij) · M4/P1 (Rodgi) ·
-   M5/P1-Assets (Vady). Detail-Definition jeder Phase zu Phasenbeginn mit Owner.
+   M5/P1-Assets (Vlady). Detail-Definition jeder Phase zu Phasenbeginn mit Owner.
 2. **M2/P3-Resume einplanen** (Claude Code: WAVE-3/P1 Weiß-Artefakte + P3a struggle-b/c;
    pi/Rodgi: P2 Glide-Scale, P4 Wind-Drift, P3b Zufallsplayer; Spec: `Milestone-2/Phase-3/Waves/WAVE-3.md`)
 3. ~~Org-Admin: PR #28/#29/#33 mergen~~ ✅ erledigt (gemergt, Stand 2026-07-21); **PR #40 (Planning) wartet auf CI + Review/Merge**
 4. PR für `feature/animation-authoring-docs` erstellen (Branch prüfen: Inhalte ggf. schon via upstream drin)
-5. **M5/P2 Coding-Animation neu definieren:** Upstream hat BL-18/BL-19 (Typing/Working-Animation + Settings-Trigger) bereits gebaut — Scope-Abgleich zu Phasenbeginn mit Rodgi + Vady
+5. **M5/P2 Coding-Animation neu definieren:** Upstream hat BL-18/BL-19 (Typing/Working-Animation + Settings-Trigger) bereits gebaut — Scope-Abgleich zu Phasenbeginn mit Rodgi + Vlady
 
 ## decisions (Owner, verbatim) — neue oben
 - „Contributor-Zugang da → auf main pushen/mergen versuchen“ → Ergebnis: Branch-Protection erzwingt PR + CI; Workflow jetzt: Branch direkt auf `upstream` pushen + PR gegen `ai-beavers/main` (kein Fork-Umweg mehr nötig) — 2026-07-21
-- „pi = nur ich; Vady & Jurij überall mit Claude Code" — 2026-07-21
+- „pi = nur ich; Vlady & Jurij überall mit Claude Code" — 2026-07-21
 - „Blocker direkt in der Flightplan-Doku notieren, welche Phase welche blockiert" — 2026-07-21
 - Zyklus-1-Priorisierung: Recording Agent (zentral) → XP/Level → Animationen gestaffelt → Release — 2026-07-21
 - Ältere Owner-Entscheide (Fallschirm-Interaktion, 1,5× Glide, struggle-Varianten,
@@ -73,9 +73,9 @@ none — Hinweise: Comfy-Cloud-MCP nur in Claude Code; `npx` in pi geblockt → 
 
 ## next_action
 1. **Rodgi:** Review für PR #40 anfragen (Gw3i/Org-Admin) → nach Merge: Team-Dispatch
-   (Prompts aus `KICKOFF-AGENT-PROMPTS.md` an Vady + Jurij schicken)
+   (Prompts aus `KICKOFF-AGENT-PROMPTS.md` an Vlady + Jurij schicken)
 2. **Team-Kickoff Zyklus 1:** Jurij = M3/P1 (Herdr), Rodgi = M4/P1 (Log-Reader),
-   Vady = M5/P1-Assets (Baum) — alle „Blocked by: none"
+   Vlady = M5/P1-Assets (Baum) — alle „Blocked by: none"
 3. **Offene Owner-Entscheide (NOTE.md):** Apple-Developer-Account (~99 $/Jahr)?
    macOS-Testhardware im Team? macOS-Installer gleichwertig zum Z1-Launch?
 4. **Später:** M2/P3-WAVE-3-Resume (Fallschirm-Polish, Claude Code); M5/P2-Scope

@@ -11,7 +11,7 @@
 **Status:** in-progress — **PAUSIERT 2026-07-21** (Re-Onboarding/Zyklus-1-Neuplanung; WAVE-1 ✅, WAVE-2 ✅, WAVE-3 offen. Resume: Claude Code → WAVE-3/P1+P3a, danach pi → P2/P4/P3b)
 
 **Blocked by:** none · **Blocks:** nichts hart (Pilot-Interaktion; M5 kann parallel starten)
-**Accountable:** Vady (Assets via Claude Code) + Rodgi (Runtime via pi)
+**Accountable:** Vlady (Assets via Claude Code) + Rodgi (Runtime via pi)
 
 ## Geklärter Scope (Owner-Entscheide 2026-07-20)
 

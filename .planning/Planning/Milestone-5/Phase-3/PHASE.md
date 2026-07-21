@@ -12,7 +12,7 @@
 - Varianten (welche Drinks) werden zu Phasenbeginn definiert.
 - Kosten/Credits für ComfyUI-Generierung sind kein Blocker (Owner-Beschluss 2026-07-20).
 
-**Accountable:** Vady (Assets via Claude Code; Runtime: Rodgi + pi)
+**Accountable:** Vlady (Assets via Claude Code; Runtime: Rodgi + pi)
 **Zyklus:** Zyklus 1
 **Blocked by:** M2/P1–P2 ✅ (Asset-Pipeline steht) · Runtime-Verdrahtung level-gekoppelter Trigger zusätzlich: M4/P2 (XP/Level-Modell)
 **Dauer (grob):** ~1 Woche (WAVE-1 Assets + WAVE-2 Runtime)

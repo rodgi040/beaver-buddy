@@ -11,7 +11,7 @@
 ## Zyklus-1-Exit-Kriterien
 1. Funktionierende, herunterladbare App (Windows-Installer via Release-Pipeline)
 2. 100 Downloads
-3. 7 Contributors (aktuell 3: Rodgi, Vady, Jurij)
+3. 7 Contributors (aktuell 3: Rodgi, Vlady, Jurij)
 
 ## Phases
 - [ ] Phase 1 — Contributor-Doku & API/Asset-Builder-Doku: Workflow-Doku (Asset-Builder,

@@ -1,10 +1,10 @@
 # Agent-Start-Prompts — Team Kickoff Zyklus 1
 
-> Ready-to-paste Prompts für Vadys und Jurijs Claude-Code-Sessions.
+> Ready-to-paste Prompts für Vladys und Jurijs Claude-Code-Sessions.
 > Stand: 2026-07-21. Voraussetzung: Repo-Klon mit dem Stand aus PR #40
 > (`.planning/` muss im Checkout vorhanden sein).
 
-## Prompt für Vady (Claude Code) — M5 Animationen
+## Prompt für Vlady (Claude Code) — M5 Animationen
 
 ```
 Du arbeitest am Projekt Beaver Buddy (Electron Desktop-Pet, Pixel-Art-Biber).
@@ -14,7 +14,7 @@ Lies ZUERST in dieser Reihenfolge:
 3. .planning/ROADMAP.md (Milestones + Dependency-Übersicht)
 4. .planning/Planning/Milestone-5/MILESTONE.md + Milestone-5/Phase-1/PHASE.md
 
-Deine Rolle: Du bist Vadys Coding-Agent für MILESTONE 5 (Sprite-Animationen).
+Deine Rolle: Du bist Vladys Coding-Agent für MILESTONE 5 (Sprite-Animationen).
 Du bist der einzige Agent mit Comfy-Cloud-MCP — ALLE Asset-Arbeit läuft über dich.
 Konvention: eine Animation pro Phase, WAVE-1 = Assets (du), WAVE-2 = Runtime (pi/Rodgi).
 
