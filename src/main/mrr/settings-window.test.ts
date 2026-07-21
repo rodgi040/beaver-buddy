@@ -98,6 +98,7 @@ describe('createSettingsHandlers', () => {
         changed.push(next);
       },
       onProgressReset: vi.fn().mockResolvedValue(undefined),
+      onForceWork: vi.fn(),
       getUsageSources: () => usageSnapshot,
       onUsageEnabledChanged: (next) => {
         usageEnabledCalls.push(next);
@@ -152,8 +153,17 @@ describe('createSettingsHandlers', () => {
     await expect(handlers.disconnect(fakeEvent, { target: 'stripe' })).resolves.toEqual({ ok: false, error: 'unauthorized' });
     await expect(handlers.resetProgress(fakeEvent)).resolves.toEqual({ ok: false, error: 'unauthorized' });
     await expect(handlers.connectUsage(fakeEvent, { target: 'claude' })).resolves.toEqual({ ok: false, error: 'unauthorized' });
+    expect(handlers.forceWork(fakeEvent)).toEqual({ ok: false, error: 'unauthorized' });
     expect(changed).toHaveLength(0);
     expect(d.onProgressReset).not.toHaveBeenCalled();
+    expect(d.onForceWork).not.toHaveBeenCalled();
+  });
+
+  it('forceWork forwards to onForceWork for an authorized sender', () => {
+    const d = deps();
+    const handlers = createSettingsHandlers(d, () => true);
+    expect(handlers.forceWork(fakeEvent)).toEqual({ ok: true });
+    expect(d.onForceWork).toHaveBeenCalledTimes(1);
   });
 
   it('readStatus returns mode/connected booleans plus per-source usage, never secrets', () => {
@@ -326,6 +336,7 @@ describe('openSettingsWindow', () => {
       }),
       onSettingsChanged: () => {},
       onProgressReset: vi.fn().mockResolvedValue(undefined),
+      onForceWork: vi.fn(),
       getUsageSources: () => ({
         claude: { enabled: false, logsFound: false, connected: false, lifetimeTokens: 0, todayTokens: 0 },
         codex: { enabled: false, logsFound: false, connected: false, lifetimeTokens: 0, todayTokens: 0 },
@@ -401,6 +412,7 @@ describe('openSettingsWindow', () => {
       }),
       onSettingsChanged: () => {},
       onProgressReset: vi.fn().mockResolvedValue(undefined),
+      onForceWork: vi.fn(),
       getUsageSources: () => ({
         claude: { enabled: false, logsFound: false, connected: false, lifetimeTokens: 0, todayTokens: 0 },
         codex: { enabled: false, logsFound: false, connected: false, lifetimeTokens: 0, todayTokens: 0 },
@@ -448,6 +460,7 @@ describe('openSettingsWindow', () => {
       }),
       onSettingsChanged: () => {},
       onProgressReset: vi.fn().mockResolvedValue(undefined),
+      onForceWork: vi.fn(),
       getUsageSources: () => ({
         claude: { enabled: false, logsFound: false, connected: false, lifetimeTokens: 0, todayTokens: 0 },
         codex: { enabled: false, logsFound: false, connected: false, lifetimeTokens: 0, todayTokens: 0 },

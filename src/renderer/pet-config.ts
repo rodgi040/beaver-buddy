@@ -122,3 +122,13 @@ export const BUBBLE_OFFSET_ABOVE_PET_PX = 8;
 // beaver, and the duration of that window in seconds.
 export const CLICKS_TO_GRAB = 3;
 export const CLICK_WINDOW_S = 4;
+
+// "Working" easter egg: when an idle pause ends, the beaver occasionally sits
+// where it is and frantically types on a laptop for a while (the typing-cat
+// meme), then resumes roaming. Low probability so it's a noticed surprise, not
+// a per-idle habit; the duration is the long "epic" typing loop itself.
+// MVP has no sit/open/close/stand transition frames — it snaps into the type
+// loop and back to idle (handoff: transitions are later polish).
+export const WORK_PROBABILITY = 0.05;
+export const WORK_DURATION_MIN_S = 8;
+export const WORK_DURATION_MAX_S = 16;

@@ -17,6 +17,7 @@ const PET_CHANGED_CHANNEL = 'state:pet'; // must match src/main/ipc-channels.ts
 const HATCH_START_CHANNEL = 'state:hatch'; // must match src/main/ipc-channels.ts
 const QUIP_CHANGED_CHANNEL = 'state:quip'; // must match src/main/ipc-channels.ts
 const BOUNDS_CHANGED_CHANNEL = 'state:bounds'; // must match src/main/ipc-channels.ts
+const FORCE_WORK_CHANNEL = 'state:force-work'; // must match src/main/ipc-channels.ts
 
 interface PetChangedPayload {
   level: number;
@@ -68,6 +69,13 @@ contextBridge.exposeInMainWorld('beaverBuddy', {
   onBoundsChanged: (callback: (bounds: BoundsChangedPayload) => void): void => {
     ipcRenderer.on(BOUNDS_CHANGED_CHANNEL, (_event, bounds: BoundsChangedPayload) => {
       callback(bounds);
+    });
+  },
+  // One-way main -> renderer only; fires when the settings "make the beaver
+  // work" button is clicked.
+  onForceWork: (callback: () => void): void => {
+    ipcRenderer.on(FORCE_WORK_CHANNEL, () => {
+      callback();
     });
   },
 });

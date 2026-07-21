@@ -17,7 +17,7 @@ import {
   stageHasInteraction,
   type CaptureMode,
 } from './input-capture.js';
-import { clampRoamStateToBounds, createRoamState, tick, type RoamState, type Bounds } from './roam.js';
+import { clampRoamStateToBounds, createRoamState, forceWorking, tick, type RoamState, type Bounds } from './roam.js';
 import {
   BUBBLE_TAIL_SIZE_PX,
   EVOLUTION_SHAKE_JITTER_PX,
@@ -58,6 +58,7 @@ declare global {
       onHatchStart(callback: () => void): void;
       onQuip(callback: (quip: QuipChangedPayload) => void): void;
       onBoundsChanged(callback: (bounds: { width: number; height: number }) => void): void;
+      onForceWork(callback: () => void): void;
     };
     // Read-only diagnostic surface; nothing in the app reads it.
     __debugRoam?: RoamState;
@@ -131,6 +132,8 @@ let paused = false;
 let stage: Stage = 'baby';
 let sheet: Sheet | null = null;
 let roamState: RoamState = createRoamState(bounds(), Math.random);
+// Set by the settings "make the beaver work" button; consumed on the next tick.
+let pendingForceWork = false;
 let frameIndex = 0;
 let frameAccumulatorS = 0;
 let lastTimestampMs: number | null = null;
@@ -234,6 +237,10 @@ window.beaverBuddy.onHatchStart(() => {
     })
     .catch((error: unknown) => console.error('Failed to load lodge sprite sheet:', error));
   needsDraw = true;
+});
+
+window.beaverBuddy.onForceWork(() => {
+  pendingForceWork = true;
 });
 
 window.beaverBuddy.onBoundsChanged((next) => {
@@ -463,6 +470,21 @@ function frame(timestampMs: number): void {
   // never touches the main-process pause state, so tray Pause stays a pure
   // user control (see evolution.ts).
   roamState = tick(roamState, dtSeconds, bounds(), paused || evolutionState !== null || hatchState !== null, Math.random, input);
+  // Manual "make the beaver work" trigger. Applied after tick and only when no
+  // hatch/evolution owns the screen; forceWorking itself no-ops mid grab/glide.
+  if (pendingForceWork) {
+    pendingForceWork = false;
+    if (evolutionState === null && hatchState === null) {
+      roamState = forceWorking(roamState, bounds(), Math.random);
+    }
+  }
+  // The typing art is adult-only. If this stage's sheet has no `type` row, never
+  // sit in the working state (mirrors how grab/glide is gated to the baby
+  // stage) — otherwise drawFrame would ask for a row that isn't there. timer 0
+  // makes the next idle tick pick a normal roam behavior immediately.
+  if (roamState.phase === 'working' && sheet !== null && !sheet.meta.rows.some((row) => row.name === 'type')) {
+    roamState = { ...roamState, phase: 'idle', anim: 'idle', timer: 0, frameHold: false };
+  }
   window.__debugRoam = roamState;
 
   // Compute the pet's on-screen position once this frame and reuse it for

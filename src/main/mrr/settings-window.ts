@@ -12,6 +12,7 @@ import { applyWindowHardening } from '../hardening';
 import {
   SETTINGS_CONNECT_USAGE_CHANNEL,
   SETTINGS_DISCONNECT_CHANNEL,
+  SETTINGS_FORCE_WORK_CHANNEL,
   SETTINGS_READ_STATUS_CHANNEL,
   SETTINGS_RESET_PROGRESS_CHANNEL,
   SETTINGS_SAVE_CHANNEL,
@@ -34,6 +35,8 @@ export interface SettingsWindowDeps {
   readonly onSettingsChanged: (next: SettingsState) => void;
   // Wipes pet XP to level 1 / baby and replays hatch — growth keys/mode untouched.
   readonly onProgressReset: () => Promise<void>;
+  // Manually starts the beaver's "sit and type" working animation now.
+  readonly onForceWork: () => void;
   // Re-scan logs + return per-source status (enabled is opt-in; tokens only when enabled).
   readonly getUsageSources: () => UsageSourcesSnapshot;
   readonly onUsageEnabledChanged: (next: { claudeEnabled: boolean; codexEnabled: boolean }) => void;
@@ -76,6 +79,7 @@ export interface SettingsHandlers {
   disconnect(event: IpcMainInvokeEvent, payload: unknown): Promise<unknown>;
   resetProgress(event: IpcMainInvokeEvent): Promise<unknown>;
   connectUsage(event: IpcMainInvokeEvent, payload: unknown): Promise<unknown>;
+  forceWork(event: IpcMainInvokeEvent): unknown;
 }
 
 function usagePayload(usage: UsageSourcesSnapshot) {
@@ -213,6 +217,12 @@ export function createSettingsHandlers(
       }
     },
 
+    forceWork(event) {
+      if (!isAuthorized(event)) return { ok: false, error: 'unauthorized' };
+      deps.onForceWork();
+      return { ok: true };
+    },
+
     async connectUsage(event, payload) {
       if (!isAuthorized(event)) return { ok: false, error: 'unauthorized' };
       const parsed = validateConnectUsageInput(payload);
@@ -249,6 +259,7 @@ function registerHandlers(deps: SettingsWindowDeps): void {
   ipcMain.handle(SETTINGS_DISCONNECT_CHANNEL, (event, payload: unknown) => handlers.disconnect(event, payload));
   ipcMain.handle(SETTINGS_RESET_PROGRESS_CHANNEL, (event) => handlers.resetProgress(event));
   ipcMain.handle(SETTINGS_CONNECT_USAGE_CHANNEL, (event, payload: unknown) => handlers.connectUsage(event, payload));
+  ipcMain.handle(SETTINGS_FORCE_WORK_CHANNEL, (event) => handlers.forceWork(event));
 }
 
 export function openSettingsWindow(deps: SettingsWindowDeps): void {

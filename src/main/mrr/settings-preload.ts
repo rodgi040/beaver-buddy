@@ -14,6 +14,7 @@ const SETTINGS_READ_STATUS_CHANNEL = 'settings:read-status'; // must match src/m
 const SETTINGS_DISCONNECT_CHANNEL = 'settings:disconnect'; // must match src/main/ipc-channels.ts
 const SETTINGS_RESET_PROGRESS_CHANNEL = 'settings:reset-progress'; // must match src/main/ipc-channels.ts
 const SETTINGS_CONNECT_USAGE_CHANNEL = 'settings:connect-usage'; // must match src/main/ipc-channels.ts
+const SETTINGS_FORCE_WORK_CHANNEL = 'settings:force-work'; // must match src/main/ipc-channels.ts
 
 export interface SaveSettingsPayload {
   stripeKey?: string;
@@ -28,6 +29,7 @@ contextBridge.exposeInMainWorld('beaverBuddySettings', {
   disconnect: (target: 'stripe' | 'revenuecat' | 'claude' | 'codex'): Promise<unknown> =>
     ipcRenderer.invoke(SETTINGS_DISCONNECT_CHANNEL, { target }),
   resetProgress: (): Promise<unknown> => ipcRenderer.invoke(SETTINGS_RESET_PROGRESS_CHANNEL),
+  forceWork: (): Promise<unknown> => ipcRenderer.invoke(SETTINGS_FORCE_WORK_CHANNEL),
   connectUsage: (target: 'claude' | 'codex'): Promise<unknown> =>
     ipcRenderer.invoke(SETTINGS_CONNECT_USAGE_CHANNEL, { target }),
 });

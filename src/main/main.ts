@@ -4,6 +4,7 @@ import { applySessionHardening, applyWindowHardening } from './hardening';
 import { parseInjectXp, parseKeychainService, parseQuipFlags, hasMrrPollNowFlag } from './flags';
 import {
   BOUNDS_CHANGED_CHANNEL,
+  FORCE_WORK_CHANNEL,
   HATCH_START_CHANNEL,
   INPUT_CAPTURE_MODE_CHANNEL,
   PAUSE_CHANGED_CHANNEL,
@@ -279,6 +280,9 @@ app.whenReady().then(async () => {
           const lastUpdate = xpEngine.getLastUpdate();
           mainWindow?.webContents.send(PET_CHANGED_CHANNEL, lastUpdate);
         }
+      },
+      onForceWork: () => {
+        mainWindow?.webContents.send(FORCE_WORK_CHANNEL);
       },
       getUsageSources: () => {
         usageTracker?.refresh();

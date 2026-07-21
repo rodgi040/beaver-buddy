@@ -58,6 +58,9 @@ describe('renderer: HiDPI bounds and clear behavior', () => {
       onBoundsChanged: vi.fn((cb: (...args: unknown[]) => void) => {
         (listeners.bounds ||= []).push(cb);
       }),
+      onForceWork: vi.fn((cb: (...args: unknown[]) => void) => {
+        (listeners.forceWork ||= []).push(cb);
+      }),
     };
 
     windowStub = {
