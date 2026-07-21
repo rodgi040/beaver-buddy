@@ -1,8 +1,8 @@
 {
   "tile": 96,
   "fps": 8,
-  "sheetWidth": 192,
-  "sheetHeight": 192,
+  "sheetWidth": 768,
+  "sheetHeight": 288,
   "rows": [
     {
       "name": "idle",
@@ -11,6 +11,10 @@
     {
       "name": "walk",
       "frames": 2
+    },
+    {
+      "name": "type",
+      "frames": 8
     }
   ]
 }

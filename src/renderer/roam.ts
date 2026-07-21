@@ -12,8 +12,10 @@
 // renderer.ts's celebrate()).
 //
 // Transition table:
+//   idle        --timer expires, work roll-->              working
 //   idle        --timer expires, not at edge-->            walk
 //   idle        --timer expires, at edge, climb roll-->     climbUp
+//   working     --typing-loop timer expires-->              idle
 //   walk        --reaches target-->                          idle
 //   climbUp     --reaches climb height-->                     climbPause
 //   climbPause  --timer expires-->                            climbDown
@@ -48,6 +50,9 @@ import {
   ROTATION_RIGHT_CLIMB_DEG,
   TARGET_EPSILON_PX,
   WALK_SPEED_PX_S,
+  WORK_DURATION_MAX_S,
+  WORK_DURATION_MIN_S,
+  WORK_PROBABILITY,
 } from './pet-config.js';
 
 export interface Bounds {
@@ -55,9 +60,9 @@ export interface Bounds {
   readonly height: number;
 }
 
-export type AnimName = 'idle' | 'walk' | 'struggle' | 'parachute-wind' | 'land';
+export type AnimName = 'idle' | 'walk' | 'struggle' | 'parachute-wind' | 'land' | 'type';
 export type Facing = 'left' | 'right';
-type Phase = 'idle' | 'walk' | 'climbUp' | 'climbPause' | 'climbDown' | 'grabbed' | 'gliding' | 'landing';
+type Phase = 'idle' | 'walk' | 'climbUp' | 'climbPause' | 'climbDown' | 'grabbed' | 'gliding' | 'landing' | 'working';
 
 export type Rng = () => number; // uniform [0, 1)
 
@@ -141,6 +146,10 @@ function pickClimbPause(rng: Rng): number {
   return lerp(CLIMB_PAUSE_MIN_S, CLIMB_PAUSE_MAX_S, rng());
 }
 
+function pickWorkDuration(rng: Rng): number {
+  return lerp(WORK_DURATION_MIN_S, WORK_DURATION_MAX_S, rng());
+}
+
 function pickWalkTargetX(bounds: Bounds, rng: Rng): number {
   const max = maxX(bounds);
   if (rng() < EDGE_TARGET_PROBABILITY) {
@@ -154,7 +163,21 @@ function isAtEdge(x: number, bounds: Bounds): boolean {
 }
 
 // Called when the idle pause timer expires: decides the next behavior.
+// The work roll comes first so "sit and type" can trigger anywhere the beaver
+// happens to be idling (including at an edge); it's a stationary state, so x/y
+// are left untouched and roaming resumes via idle when the loop ends.
 function decideNext(state: RoamState, bounds: Bounds, rng: Rng): RoamState {
+  if (rng() < WORK_PROBABILITY) {
+    return {
+      ...state,
+      phase: 'working',
+      anim: 'type',
+      rotation: 0,
+      timer: pickWorkDuration(rng),
+      frameHold: false,
+    };
+  }
+
   const roll = rng();
 
   if (isAtEdge(state.x, bounds) && roll < CLIMB_PROBABILITY) {
@@ -282,7 +305,17 @@ function releaseToGlide(state: RoamState, bounds: Bounds, input: RoamInput, rng:
 }
 
 function isRoamingPhase(phase: Phase): boolean {
-  return phase === 'idle' || phase === 'walk' || phase === 'climbUp' || phase === 'climbPause' || phase === 'climbDown';
+  // 'working' counts as roaming for input: the beaver can still be grabbed
+  // mid-type (a playful interruption), and click-window bookkeeping keeps
+  // ticking while it sits.
+  return (
+    phase === 'idle' ||
+    phase === 'walk' ||
+    phase === 'climbUp' ||
+    phase === 'climbPause' ||
+    phase === 'climbDown' ||
+    phase === 'working'
+  );
 }
 
 function processInput(state: RoamState, dt: number, bounds: Bounds, input: RoamInput, rng: Rng): RoamState {
@@ -357,6 +390,17 @@ export function tick(
         return { ...inputState, x, y: ground, phase: 'idle', anim: 'idle', timer: pickIdlePause(rng), frameHold: false };
       }
       return { ...inputState, x, y: ground, frameHold: false };
+    }
+
+    case 'working': {
+      // Stationary: the beaver sits and types where it stopped. When the
+      // "epic" typing loop's timer runs out, drop back to idle and normal
+      // roaming resumes from there.
+      const timer = inputState.timer - dt;
+      if (timer > 0) {
+        return { ...inputState, timer, frameHold: false };
+      }
+      return { ...inputState, phase: 'idle', anim: 'idle', timer: pickIdlePause(rng), frameHold: false };
     }
 
     case 'climbUp': {

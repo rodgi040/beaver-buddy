@@ -20,12 +20,32 @@ describe('buildAdultPlaceholder', () => {
     expect(a.meta).toEqual(b.meta);
   });
 
-  // Guards against stale or hand-edited committed assets. Fails => run
-  // `npm run assets:adult-placeholder` and commit.
-  it('committed beaver-adult.png/.json match the generator byte-for-byte', () => {
+  // Guards against stale or hand-edited committed idle/walk art. The committed
+  // adult sheet is the placeholder's idle/walk block with a `type` row appended
+  // by ingest-typing.mjs (which needs the gitignored green source, so it can't
+  // be regenerated here); the placeholder block sits at the sheet's top-left,
+  // so we byte-check that region. Fails => run `npm run assets:adult` and commit.
+  it('committed beaver-adult idle/walk block matches the placeholder generator byte-for-byte', () => {
     const { png, meta } = buildAdultPlaceholder();
-    expect(fs.readFileSync(ADULT_SHEET_URL).equals(png)).toBe(true);
-    expect(JSON.parse(fs.readFileSync(ADULT_META_URL, 'utf8'))).toEqual(meta);
+    const placeholder = decodePng(png);
+    const committed = decodePng(fs.readFileSync(ADULT_SHEET_URL));
+
+    // Extract the top-left placeholder-sized region out of the (wider) committed
+    // sheet and compare it byte-for-byte to the placeholder's pixels.
+    const region = Buffer.alloc(placeholder.width * placeholder.height * 4);
+    for (let y = 0; y < placeholder.height; y += 1) {
+      const srcStart = y * committed.width * 4;
+      region.set(committed.data.subarray(srcStart, srcStart + placeholder.width * 4), y * placeholder.width * 4);
+    }
+    const placeholderBytes = Buffer.from(placeholder.data.buffer, placeholder.data.byteOffset, placeholder.data.length);
+    expect(region.equals(placeholderBytes)).toBe(true);
+
+    const committedMeta = JSON.parse(fs.readFileSync(ADULT_META_URL, 'utf8'));
+    expect(committedMeta.tile).toBe(meta.tile);
+    expect(committedMeta.fps).toBe(meta.fps);
+    // idle + walk rows are inherited verbatim; `type` is appended.
+    expect(committedMeta.rows.slice(0, 2)).toEqual(meta.rows);
+    expect(committedMeta.rows[2]).toEqual({ name: 'type', frames: 8 });
   });
 
   it('sheet dimensions match the meta; tile/fps/rows are inherited from the teen sheet', () => {

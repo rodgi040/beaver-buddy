@@ -92,8 +92,10 @@ twice (BL-11's `teen-to-right-1` as walk frame, then its `-1-4` replacement).
 - **Beaver stages**: `idle(1), walk(N)` — no run/sleep/react (BL-11 slimmed
   the animation set to match `roam.ts`'s idle/walk-only state machine).
   `beaver-baby.png`: walk×2. `beaver-teen.png`: walk×2. `beaver-adult.png`:
-  walk×2 (placeholder derived from teen — see Provenance). fps hint: 8. The
-  idle pose never appears in a walk row — walk cycles are step frames only.
+  walk×2 plus `type(8)` — the "sit and type on a laptop" loop for `roam.ts`'s
+  `working` state (placeholder idle/walk derived from teen; the type row is
+  generated art — see Provenance). fps hint: 8. The idle pose never appears in
+  a walk row — walk cycles are step frames only.
 - **Lodge** (`lodge.png`): `idle(1), shake(3), burst(3), spark(4)`; spark
   frames are 8×8 particles centered in the 48×48 tile (rows/cols 20–27, also
   noted in `lodge.json`). fps hint: 10 (unchanged; the renderer's shared
@@ -127,6 +129,22 @@ placeholder derived from the committed teen sheet (per-frame crop to the
 content bbox + nearest-neighbor upscale to the full tile height) by
 `scripts/gen-sprites/build-adult-placeholder.ts`, committed like the other
 sheets and byte-deterministic.
+
+The adult `type` row (8 frames) is generated art: one Comfy Cloud run (Gemini
+Nano Banana, prompt_id `b99d59bf`, 2026-07-21) — the beaver alone holding a
+small laptop, typing, on a solid `#00FF00` chroma-key background (green, not
+white: the ingest's white-remover eats bright detail). The model emits an
+irregular 6×4 grid; 8 uniform typing frames from the top two rows are hand-
+picked, chroma-keyed (green-dominance test), cropped, area-average downscaled
+to one locked scale, and composited bottom-aligned onto 96px tiles by
+`scripts/gen-sprites/ingest-typing.mjs` (`npm run assets:adult` runs the
+placeholder then the typing bake). The raw sheet stays in the gitignored
+`assets-src/comfyui/adult-type/`. **Provisional**: this row rides on the teen-
+derived placeholder, so the typing art (rounder Nano-Banana style) doesn't yet
+match the idle/walk stills — it's expected to be regenerated against the final
+adult beaver at flight-plan #7; the committed record is the script + this
+recipe. No sit/open/close/stand transition frames yet (MVP snaps into the loop
+and back to idle — later polish).
 
 **Lodge** (`lodge.png`): pixel maps authored by OpenAI Codex (vision-guided
 from a user-supplied reference image), iterated through visual design-review

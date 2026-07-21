@@ -24,6 +24,7 @@ import {
   MAX_DT_S,
   PET_SCALE,
   WALK_SPEED_PX_S,
+  WORK_DURATION_MAX_S,
 } from './pet-config.js';
 
 const bounds: Bounds = { width: 800, height: 600 };
@@ -109,14 +110,69 @@ describe('roam: climb only at edges', () => {
   });
 
   it('does climb when the idle timer expires at a side edge with a climb-range roll', () => {
-    // createRoamState consumes 2 rng() calls (initial x, initial idle pause)
-    // before decideNext's own first call (the climb roll) — land that 3rd
-    // call below CLIMB_PROBABILITY (0.35).
-    const rng = scriptedRng([0.9, 0.9, 0.2, 0.5, 0.5, 0.5]);
+    // createRoamState consumes 2 rng() calls (initial x, initial idle pause).
+    // decideNext then rolls the work chance first (3rd call, kept high to skip
+    // it) and the climb roll second (4th call, below CLIMB_PROBABILITY 0.35).
+    const rng = scriptedRng([0.9, 0.9, 0.9, 0.2, 0.5, 0.5]);
     let state: RoamState = { ...createRoamState(bounds, rng), phase: 'idle', x: 0, y: bounds.height - SCALED_TILE_PX, timer: 0.01 };
     state = tick(state, 1, bounds, false, rng);
     expect(state.phase).toBe('climbUp');
     expect(state.rotation).not.toBe(0);
+  });
+});
+
+describe('roam: working (sit and type)', () => {
+  const ground = bounds.height - SCALED_TILE_PX;
+
+  it('enters working when the idle timer expires and the work roll wins', () => {
+    // createRoamState consumes 2 rng() calls; decideNext's first call is the
+    // work roll — land it below WORK_PROBABILITY (0.05).
+    const rng = scriptedRng([0.9, 0.9, 0.01, 0.5]);
+    const start: RoamState = { ...createRoamState(bounds, rng), phase: 'idle', x: 300, y: ground, timer: 0.01 };
+    const next = tick(start, 1, bounds, false, rng);
+    expect(next.phase).toBe('working');
+    expect(next.anim).toBe('type');
+    // Stationary: it sits where it was idling.
+    expect(next.x).toBe(300);
+    expect(next.y).toBe(ground);
+  });
+
+  it('stays put for the whole typing loop, then returns to idle roaming', () => {
+    const rng = createSeededRng(1);
+    let state: RoamState = {
+      ...createRoamState(bounds, rng),
+      phase: 'working',
+      anim: 'type',
+      x: 250,
+      y: ground,
+      timer: WORK_DURATION_MAX_S,
+    };
+    // Tick past the longest possible loop; x never moves while working.
+    let sawWorking = false;
+    for (let elapsed = 0; elapsed < WORK_DURATION_MAX_S + 1; elapsed += 0.1) {
+      state = tick(state, 0.1, bounds, false, rng);
+      expect(state.x).toBe(250);
+      if (state.phase === 'working') sawWorking = true;
+    }
+    expect(sawWorking).toBe(true);
+    expect(state.phase).toBe('idle');
+    expect(state.anim).toBe('idle');
+  });
+
+  it('can still be grabbed mid-type', () => {
+    const rng = createSeededRng(1);
+    let state: RoamState = {
+      ...createRoamState(bounds, rng),
+      phase: 'working',
+      anim: 'type',
+      x: 250,
+      y: ground,
+      timer: WORK_DURATION_MAX_S,
+    };
+    const grab: RoamInput = { ...defaultRoamInput, clicks: CLICKS_TO_GRAB, cursorX: 250, cursorY: ground };
+    state = tick(state, 0.1, bounds, false, rng, grab);
+    expect(state.phase).toBe('grabbed');
+    expect(state.anim).toBe('struggle');
   });
 });
 
@@ -144,6 +200,9 @@ describe('roam: anim matches motion', () => {
           break;
         case 'landing':
           expect(state.anim).toBe('land');
+          break;
+        case 'working':
+          expect(state.anim).toBe('type');
           break;
       }
     }
