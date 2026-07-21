@@ -162,20 +162,30 @@ function isAtEdge(x: number, bounds: Bounds): boolean {
   return x <= EDGE_THRESHOLD_PX || x >= maxX(bounds) - EDGE_THRESHOLD_PX;
 }
 
+// Enters the stationary "sit and type" state from the pet's current spot.
+// Shared by the random idle trigger (decideNext) and the manual settings
+// trigger (forceWorking) so both build the state identically.
+export function enterWorking(state: RoamState, rng: Rng): RoamState {
+  return { ...state, phase: 'working', anim: 'type', rotation: 0, timer: pickWorkDuration(rng), frameHold: false };
+}
+
+// Manual trigger (the settings "make the beaver work" button). Snaps the pet to
+// the ground where it stands and starts typing — unless it's mid-interaction
+// (grabbed / gliding / landing), which is never interrupted.
+export function forceWorking(state: RoamState, bounds: Bounds, rng: Rng): RoamState {
+  if (state.phase === 'grabbed' || state.phase === 'gliding' || state.phase === 'landing') {
+    return state;
+  }
+  return enterWorking({ ...state, x: clamp(state.x, 0, maxX(bounds)), y: groundY(bounds), rotation: 0 }, rng);
+}
+
 // Called when the idle pause timer expires: decides the next behavior.
 // The work roll comes first so "sit and type" can trigger anywhere the beaver
 // happens to be idling (including at an edge); it's a stationary state, so x/y
 // are left untouched and roaming resumes via idle when the loop ends.
 function decideNext(state: RoamState, bounds: Bounds, rng: Rng): RoamState {
   if (rng() < WORK_PROBABILITY) {
-    return {
-      ...state,
-      phase: 'working',
-      anim: 'type',
-      rotation: 0,
-      timer: pickWorkDuration(rng),
-      frameHold: false,
-    };
+    return enterWorking(state, rng);
   }
 
   const roll = rng();

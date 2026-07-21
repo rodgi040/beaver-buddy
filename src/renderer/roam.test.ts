@@ -4,6 +4,7 @@ import {
   createRoamState,
   createSeededRng,
   defaultRoamInput,
+  forceWorking,
   tick,
   type Bounds,
   type RoamInput,
@@ -157,6 +158,25 @@ describe('roam: working (sit and type)', () => {
     expect(sawWorking).toBe(true);
     expect(state.phase).toBe('idle');
     expect(state.anim).toBe('idle');
+  });
+
+  it('forceWorking starts typing from idle and snaps to the ground', () => {
+    const rng = createSeededRng(1);
+    const start: RoamState = { ...createRoamState(bounds, rng), phase: 'walk', anim: 'walk', x: 250, y: 10 };
+    const next = forceWorking(start, bounds, rng);
+    expect(next.phase).toBe('working');
+    expect(next.anim).toBe('type');
+    expect(next.x).toBe(250);
+    expect(next.y).toBe(ground);
+    expect(next.timer).toBeGreaterThan(0);
+  });
+
+  it('forceWorking is a no-op mid grab/glide/landing (never interrupts an interaction)', () => {
+    const rng = createSeededRng(1);
+    for (const phase of ['grabbed', 'gliding', 'landing'] as const) {
+      const busy: RoamState = { ...createRoamState(bounds, rng), phase, anim: 'struggle' };
+      expect(forceWorking(busy, bounds, rng)).toBe(busy);
+    }
   });
 
   it('can still be grabbed mid-type', () => {

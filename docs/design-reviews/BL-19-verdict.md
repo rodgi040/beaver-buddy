@@ -93,6 +93,21 @@ the character reads consistently across all 8 frames with the laptop present.
 Neither blocks the feature; both are logged for the flight-plan #7 / animation
 polish items.
 
+## Manual trigger (settings button)
+
+A **"Make the beaver work 💻"** button in the settings Pet section triggers the
+working state on demand (testing + a fun manual control). It reuses the exact
+reset-progress IPC path: `beaverBuddySettings.forceWork()` invoke →
+`SETTINGS_FORCE_WORK_CHANNEL` handler (sender-guarded) →
+`main` forwards `FORCE_WORK_CHANNEL` to the overlay → renderer sets a
+`pendingForceWork` flag → `forceWorking(roamState, bounds, rng)` on the next
+tick (snaps to the ground, no-ops mid grab/glide/landing).
+
+The typing art is adult-only, so the renderer vetoes the `working` state when
+the current stage's sheet has no `type` row (mirrors how grab/glide is gated to
+the baby stage) — at baby/teen the button is a safe no-op rather than a missing-
+row crash. This veto also protects the random trigger at non-adult stages.
+
 ## Windows design gate
 
 No Windows-specific rendering change (no new window, tray, icon, or HiDPI
