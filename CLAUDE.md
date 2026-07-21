@@ -1,8 +1,10 @@
 # CLAUDE.md — Beaver Buddy
 
 Read first, every session. `PRD.md` is the product source of truth; this file is the
-guardrails. Most work here is executed by autonomous /build items — these rules are
-written to be enforceable without a human in the loop.
+guardrails. `README.md` (project overview) and `CONTRIBUTING.md` (contribution
+mechanics, including agent-skill installation) are part of the codebase — consult
+them when their topics come up. Most work here is executed by autonomous /build
+items — these rules are written to be enforceable without a human in the loop.
 
 ## What this is
 
@@ -24,6 +26,15 @@ extended.
   installs use `npm ci` (lockfile committed and authoritative).
 - ADR 001 (the R1 reuse research) must be merged before any item that depends on
   shell or asset-pipeline decisions starts.
+
+## Agent skills
+
+- The committed source of truth for agent skills is `skills/` (currently the
+  PixiJS v8 set). Install them once per checkout with `npm run skills:install`,
+  which copies them into `.agents/skills/` — only there are they visible to agents.
+- `.agents/skills/` is gitignored and local-only: skill iterations (Flightplan,
+  ComfyUI, drafts) happen there and are never committed. Sharing a stable skill =
+  copying it into `skills/` in its own PR.
 
 ## Electron hardening (P1 invariants, checked in review)
 
