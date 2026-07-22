@@ -3,72 +3,99 @@
 > Full resume context. Written by `/fp-pause`, read by `/fp-resume`. `STATE.md` is the short digest;
 > this file is the complete picture so the next session loses no context.
 
-**Last updated:** 2026-07-21 (pi, fp-pause — Planungssession sauber beendet)
+**Last updated:** 2026-07-22 (pi, fp-pause — Fork-Migration halb durch, M4/P1 delegiert, Debug-Report)
 
 ## current_state
-**Zyklus 1 ist vollständig geplant, das Team kann starten.** Re-Onboarding von `.flightplan/`
-abgeschlossen, Planung committed unter `.planning/` (Team-Snapshot; `.flightplan/` bleibt lokaler
-gitignorter Master). **PR #40** (vendored skills + Zyklus-1-Planning → `ai-beavers/main`):
-**CI ubuntu + windows GRÜN ✅, Status: `REVIEW_REQUIRED`** — Merge wartet auf Approval
-(Gw3i/Org-Admin; Rodgi kann nicht selbst approven). Branch `chore/zyklus1-planning` auf
-upstream ist der aktuelle Stand (`4b55734`); Fork-main gesynct. Working Tree sauber.
-**M2/P3 Fallschirm:** weiterhin offiziell pausiert (WAVE-1/2 ✅ upstream gemergt via PR #33,
-WAVE-3 Polish offen → Resume später, Claude Code).
+**Fork → Upstream-Migration: Teil 1 done, Rest blockiert auf Owner-Review (Gw3i).**
+Lokaler Stand: nur noch `main`, sauber, synchron mit Fork-`origin/main`. Upstream
+(`ai-beavers/beaver-buddy`) hat nur noch `main` + 4 PR-Branches (#38–#41) — alle stale
+Branches wurden mit Archiv-Tags geschlossen. **Migration Schritte 3–6 (Remote-Umbau,
+main-Sync, Tag-Sync, Fork-Archivierung) warten auf Merge von PR #40 + #41** — Merges
+blockiert durch **Org-Level-Ruleset** (Owner/Admin-Approval nötig; rodgi040 + jurij sind
+nur `maintain`; selbst Approval durch rodgi040 reicht nicht — getestet an PR #38).
+Vlady (GitHub: **Gw3i**) wollte die Reviews „in den nächsten Stunden" machen (Stand: Nachmittag 2026-07-22).
+**M4/P1 WAVE-1 delegiert:** Rodgi startet/startete einen Cloud-Coding-Agenten (Claude Code/Codex)
+mit dem Brief `.planning/Planning/Milestone-4/Phase-1/AGENT-BRIEF.md` — TokScale-Analyse +
+eigener Token-Log-Reader; Branch `feat/token-log-reader/M4-P1` (Stand Session-Ende: Branch
+existiert noch nicht, Agent vermutlich noch nicht gestartet/gerade gestartet).
+**Debug-Befund:** Biber wächst nicht, weil XP-Quellen Opt-in sind (Report:
+`.planning/Debugging/DEBUG-beaver-growth.md`).
 
-## completed (Session 2026-07-21)
-- **Re-Onboarding:** `.fp-new-projekt/` aufgelöst → `Meetings/2026-07-21-planung/`,
-  `Reference/windows-native-flight-plan.md`, `Archive/`; alle Pfad-Referenzen aktualisiert;
-  `.gitignore` bereinigt; Debugging-README gefixt; NOTE.md ent-dublettiert (F1/F2 erledigt)
-- **Zyklus 1 definiert:** Exit-Kriterien (App downloadbar · 100 Downloads · 7 Contributors);
-  ROADMAP mit M1–M6 + Team-Matrix + Dependency-Übersicht; 11 neue PHASE.md-Stubs mit
-  Pflichtfeldern (`Accountable`, `Blocked by:`, `Blocks:`, `Dauer`); M2/P4–P15 → M5/P1–P12 umgezogen
-- **Team-Matrix:** Jurij = M3 (Recording Agent) · Rodgi = M4 (Level/XP) + M6 (Release) ·
-  Vlady = M5 (Animationen) · Agenten-Regel: **pi = nur Rodgi, Claude Code = Vlady & Jurij**
-- **XP-/Level-Spec** (`Planning/Milestone-4/Phase-2/XP-LEVEL-MODEL.md`): nur echte
-  Input+Output-Tokens (Cache strikt raus), 5 XP/1k, Kurve kumulativ quadratisch TOTAL 120.000
-  (L32 ≈ Tag 60, Referenz 400k Tokens/Tag), **γ=2** Modell-Gewichtung via Artificial Analysis
-  Intelligence Index (Seed-Tabelle 26 Modelle aus Owner-Screenshot, REF=45, Top 1,78× / Floor 0,5×),
-  Lebenszeit-Tracking getrennt von XP
-- **5 Lebenszyklen:** Baby L1–4 · junges Baby L5–8 · Jugendlicher L9–16 · älterer Jugendlicher
-  L17–24 · Erwachsener L25–32 → M5/P12 als Stufen-Art-Paket in Z1-Scope gezogen
-- **M3:** Herdr als Erkennungslogik (statt eigener Detektion) · **M4/P1:** TokScale-**Logik**
-  1:1 für alle Harnesses (Claude Code, Codex, pi), eigener Reader, kein Tool-Dependency
-- **Multiplattform-Beschluss** (Teambesprechung): Windows + macOS nativ; ADR-002-Update (M1),
-  M6/P4 mit macOS-Targets/Signing/CI-Runner
-- **Contributor-Workflow:** Merge upstream/main (41 Commits: BL-17, BL-18/19 Typing-Animation),
-  Konflikte sauber aufgelöst (package.json Union, AGENTS.md Guardrails + .planning-Sektion),
-  Verifikation tsc/eslint/573 Tests ✓; Direct-Push → Branch-Protection (PR + CI erzwungen) →
-  **PR #40 erstellt**, CI grün, REVIEW_REQUIRED; `KICKOFF.md` + `KICKOFF-AGENT-PROMPTS.md`
-- **Namensfix:** Vady → **Vlady** (21 Dateien + PLAN.md, verifiziert 0 Rest-Treffer)
+## completed (Session 2026-07-22)
+- **Fork-Cleanup 1:** `feature/animation-authoring-docs` per `--no-ff` in main gemergt
+  (Konflikt in AGENTS.md aufgelöst: neuere `.planning/`-Sektion von HEAD + Branch-Neuerungen
+  übernommen), Tag `docs/animation-authoring`, 7 gemergte Branches lokal + remote gelöscht
+  → lokal nur noch `main` (`1c86e57`)
+- **Migrations-Plan** (`.planning/PLAN.md`, 6 Schritte) erstellt + Ausführung Teil 1:
+  - Berechtigung geklärt: rodgi040 + jurij = `maintain` auf ai-beavers; **Vlady = `Gw3i`**
+    (über Commit-Historie identifiziert); Org-Member-Listing braucht `admin:org`-Scope
+  - `docs/animation-authoring` zu upstream gepusht → **PR #41** geöffnet
+  - Reviews für PR #40 + #41 bei **Gw3i + jurij** angefragt
+  - Merge-Versuche gescheitert: Branch Protection (REVIEW_REQUIRED), Auto-Merge repo-weit
+    deaktiviert, `--admin` nicht möglich
+- **Fork-Cleanup 2 (upstream):** 15 bereits gemergte stale Branches (BL-1–BL-12,
+  BL-11-fix-walk-facing/-idle, build-loop/beaver-buddy) mit Archiv-Tags am Branch-Tip
+  (`archive/bl-item/BL-N`, `archive/build-loop/beaver-buddy`) versehen + gelöscht;
+  Tags `v0.1.0` + `docs/animation-authoring` zu upstream gepusht (upstream hatte 0 Tags);
+  **PR #38 (Dependabot) approved** — Merge trotzdem BLOCKED → Erkenntnis: Org-Ruleset
+  verlangt Owner/Admin
+- **M4/P1 Agent-Brief** geschrieben (`.planning/Planning/Milestone-4/Phase-1/AGENT-BRIEF.md`):
+  TokScale (github.com/junhoyeo/tokscale) nur als Analyse-Referenz klonen (**nie committen**),
+  Logik dokumentieren in `TOKSCALE-ANALYSIS.md`, eigenen Reader bauen (nur echte
+  Input/Output-Tokens, Cache raus, Tages-Aggregation, **10-Min-Refresh inkrementell**,
+  Win + macOS, Schema push-fähig für spätere AI-Beavers-Nutzer-DB), Branch
+  `feat/token-log-reader/M4-P1`, kein Merge ohne Rodgi-Review; PHASE.md Status →
+  in-progress, STATE.md aktualisiert (`8e5962b`)
+- **/debug Biber-Wachstum** (Scout, read-only): Root Cause = Wachstumslogik existiert +
+  verdrahtet (Tests grün), aber XP-Quellen sind Opt-in (`claudeEnabled`/`codexEnabled`
+  default `false`, `settings-store.ts:18-25`) → ohne Connect kein XP → Dauer-Baby;
+  Zusatzbefund Code ≠ Spec (3 Stufen/linear/Cache-zählend vs. 5 Stufen/quadratisch/Cache-raus);
+  Report `.planning/Debugging/DEBUG-beaver-growth.md` + README-Verlinkung (`09fc07e`)
 
 ## remaining (in Reihenfolge)
-1. **Rodgi:** Review für PR #40 anfragen (Gw3i/Org-Admin) → nach Merge: **Team-Dispatch**
-   (Prompts aus `.planning/KICKOFF-AGENT-PROMPTS.md` an Vlady + Jurij)
-2. **Team-Start (parallel, „Blocked by: none"):** Jurij = M3/P1 (Herdr-Evaluierung) ·
-   Rodgi = M4/P1 (Log-Reader TokScale-Logik) · Vlady = M5/P1 (Baum-Assets)
-3. **Offene Owner-Entscheide (NOTE.md):** Apple-Developer-Account (~99 $/Jahr) ·
-   macOS-Testhardware im Team · macOS gleichwertig zum Z1-Launch? · #3/#4b/#63/#64
-4. **Später:** M2/P3-WAVE-3-Resume (Claude Code) · M5/P2-Scope gegen BL-18/19 abgleichen
-   (Typing-Animation existiert bereits upstream) · `feature/animation-authoring-docs`-PR prüfen
-   · BL-7-Verdict · Kalibrierung XP-Konstante nach 1 Woche M4/P1-Daten
+1. **Vlady (Gw3i) merged/approved PR #40 → dann #41** (+ #38/#39, letztere schon approved von
+   rodgi040) — danach sofort:
+2. **Migration Schritte 3–6** (`.planning/PLAN.md`): `git remote rename origin fork` +
+   `upstream`→`origin`, `git branch -u origin/main main`, `git merge --ff-only origin/main`,
+   Tag-Sync prüfen, Fork auf GitHub archivieren (Empfehlung, nicht löschen), verifizieren
+3. **Cloud-Agent M4/P1 WAVE-1 beobachten:** Branch `feat/token-log-reader/M4-P1` prüfen
+   (existiert er? Fortschritt? `TOKSCALE-ANALYSIS.md` da?) — Achtung: Brief liegt im
+   `.planning/`-Ordner, der erst nach PR-#40-Merge auf ai-beavers/main ist; Agent ggf.
+   auf Fork-`main` arbeiten lassen
+4. **Nach PR-#40-Merge: Team-Dispatch** — Prompts aus `.planning/KICKOFF-AGENT-PROMPTS.md`
+   an Vlady (M5/P1) + Jurij (M3/P1)
+5. **Offen von dieser Session:** Onboarding-Hinweis „Wachstum braucht Connect" in
+   NOTE.md/M4-Spec aufnehmen? (User gefragt, Antwort ausstehend)
+6. **Owner-Entscheide (NOTE.md):** Apple-Developer-Account (~99 $/J), macOS-Testhardware,
+   macOS-Z1-Priorität, #3/#4b/#63/#64
+7. **Später:** M2/P3-WAVE-3-Resume (Claude Code, Fallschirm) · M4/P2 (XP-Modell nach Spec:
+   5 Stufen, quadratisch, Cache raus, γ=2) — schließt den Debug-Befund Code≠Spec ·
+   M5/P12 Stufen-Art-Paket · Kalibrierung XP-Konstante nach 1 Woche M4/P1-Daten
 
 ## decisions (Owner, verbatim)
-- „pi = nur ich; Vlady & Jurij überall mit Claude Code" — 2026-07-21
-- „Blocker direkt in der Flightplan-Doku notieren, welche Phase welche blockiert" — 2026-07-21
-- „XP und Lebenszeit getrennt; Hauptlogik = XP-Punkte → Level" — 2026-07-21
-- „Nur Input- und Output-Tokens zählen, kein Cache/Cache-Read" — 2026-07-21
-- „γ = 2" (Spreizung Modell-Gewichtung; Wert = Intelligenz, nicht Token-Preis) — 2026-07-21
-- „5 Lebenszyklen: Baby, junges Baby, Jugendlicher, etwas älterer Jugendlicher, Erwachsener" — 2026-07-21
-- „TokScale-Logik 1:1 nutzen für das Fetchen der lokalen Token-Logs, alle Coding-Agent-Harnesses" — 2026-07-21
-- „Für die Erkennung wollen wir Herdr nutzen" (Open-Source-Terminal-Übersichtstool) — 2026-07-21
-- „Elektron-App direkt als Multiplattform-App nativ für Windows und macOS" (Teambesprechung) — 2026-07-21
-- „Fallschirm-Resume: erst später!" — 2026-07-21
+- „Checke einmal welche offenen Branches wir noch haben … merge diese dann anschließend
+  einmal sauber mit Merge Commits und Tags" — 2026-07-22
+- „Ich möchte, dass wir jetzt … nur noch mit der Original Repository Main Branches erstelle
+  und direkt Pull Request auf der Main Repo machen kann, ohne dass wir auf der Fork-Version
+  weiterarbeiten müssen" — 2026-07-22
+- „Ich bin mir nicht sicher, ob nur der Admin tatsächlich die PR mergen kann … Bitte … das
+  noch einmal in dem Plan mitzuvermerken" — 2026-07-22 (→ Schritt 2.0 in PLAN.md; bestätigt:
+  Org-Ruleset blockiert, Owner nötig)
+- „vlady prüft das in den nächsten stunden, ich bin beim sport und werde einen cloud code
+  coding agent starten, damit dieser die Logik von Tokscale analysiert … alle 10 min sich
+  aktualisiert … in zukunft in die nutzer datenbank von AI Beavers account gepusht" — 2026-07-22
+- „das geclonte repo sollte nicht mit in die codebase commitet werden sondern nur als
+  referenz / logisches referenz vermerkt werden" — 2026-07-22
+- „Keine änderungen vornhemen, nur prüfen lassen" (/debug Biber-Wachstum) — 2026-07-22
 
 ## blockers
-- **PR #40: REVIEW_REQUIRED** — Merge braucht Approval (Gw3i/Org-Admin). Kein Code-Blocker;
-  Team kann schon vom Branch `chore/zyklus1-planning` lesen.
+- **PR-Merges (#38–#41): Org-Level-Ruleset** — Owner/Admin-Approval nötig (Gw3i).
+  rodgi040-`maintain` reicht nicht (empirisch an #38 getestet: Approval da, Merge BLOCKED).
+  Auto-Merge repo-weit deaktiviert. Kein Code-Blocker.
+- **Cloud-Agent (M4/P1) sieht `.planning/` nur auf Fork-main** — bis PR #40 gemerged ist.
 
 ## next_action
-**Review für PR #40 anfragen** (CI grün) → nach Merge: Prompts aus
-`.planning/KICKOFF-AGENT-PROMPTS.md` an Vlady (M5/P1) und Jurij (M3/P1) schicken;
-Rodgi startet M4/P1 via `/fp-resume`.
+**PR-Status prüfen** (`gh pr view 40/41 --repo ai-beavers/beaver-buddy`): Sobald #40 + #41
+gemerged sind → Migration Schritte 3–6 aus `.planning/PLAN.md` ausführen (Remote-Umbau,
+ff-only-Sync, Fork archivieren). Parallel: Fortschritt des Cloud-Agents auf Branch
+`feat/token-log-reader/M4-P1` checken.

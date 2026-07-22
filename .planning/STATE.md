@@ -2,11 +2,11 @@
 
 > Where the project stands now. Update after every meaningful action.
 
-**Now:** **Zyklus 1 komplett geplant, Team startklar** · PR #40 + #41: CI grün, **warten auf Review** (Vlady prüft 2026-07-22) · **M4/P1 WAVE-1 gestartet:** Cloud-Agent analysiert TokScale + baut Log-Reader (Brief: `Milestone-4/Phase-1/AGENT-BRIEF.md`) · M2/P3 Fallschirm pausiert (WAVE-3 offen)
-**Progress:** M1 ✅ · M2 P1/P2 ✅ (P3 pausiert) · M3–M6 geplant, nicht gestartet · Zyklus-1-Exit-Kriterien: App downloadbar · 100 Downloads · 7 Contributors (aktuell 3: Rodgi, Vlady, Jurij)
-**Blockers:** PR #40 — REVIEW_REQUIRED (Approval Gw3i/Org-Admin nötig; kein Code-Blocker)
-**Last:** Session 2026-07-21: Re-Onboarding + Zyklus-1 komplett (XP-Spec γ=2, 5 Lebenszyklen, Herdr, TokScale-Logik, Multiplattform Win+macOS) · Contributor-Workflow (PR #40, CI grün, REVIEW_REQUIRED) · KICKOFF + Agent-Prompts · Namensfix Vlady · fp-pause
-**Next:** ① Review für PR #40 anfragen (CI grün, REVIEW_REQUIRED) → ② nach Merge: Team-Dispatch (Prompts in KICKOFF-AGENT-PROMPTS.md) → ③ Team-Start: **M3/P1 (Jurij) ∥ M4/P1 (Rodgi) ∥ M5/P1-Assets (Vlady)** — alle „Blocked by: none". Offene Owner-Entscheide: Apple-Account, Mac-Testhardware, macOS-Z1-Priorität (NOTE.md).
+**Now:** **Fork→Upstream-Migration Teil 1 done** — lokal nur noch `main`; upstream: 15 stale Branches mit Archiv-Tags geschlossen, PR #41 offen · **Schritte 3–6 + PR-Merges (#38–#41) blockiert auf Owner-Review (Gw3i, Org-Ruleset)** · M4/P1 WAVE-1 an Cloud-Agent delegiert (TokScale-Brief) · M2/P3 Fallschirm pausiert
+**Progress:** M1 ✅ · M2 P1/P2 ✅ (P3 pausiert) · M3–M6 geplant, M4/P1 in-progress (delegiert) · Zyklus-1-Exit-Kriterien: App downloadbar · 100 Downloads · 7 Contributors (aktuell 3)
+**Blockers:** PR #38–#41 — Org-Level-Ruleset verlangt Owner/Admin-Approval (Gw3i); rodgi040=`maintain` reicht nicht (an #38 getestet); Auto-Merge repo-weit aus
+**Last:** Session 2026-07-22: Fork-Cleanup (Merge + Tags + 22 Branches geschlossen) · Migrations-Plan + Teil 1 (PR #41, Reviews bei Gw3i/jurij angefragt, PR #38 approved) · M4/P1 Agent-Brief (TokScale, Branch feat/token-log-reader/M4-P1) · /debug Biber-Wachstum: Root Cause = XP-Quellen Opt-in (DEBUG-beaver-growth.md) · fp-pause
+**Next:** ① PR-Status #40/#41 prüfen → nach Merge: Migration Schritte 3–6 (Remote-Umbau, ff-Sync, Fork archivieren) → ② Cloud-Agent-Fortschritt M4/P1 checken → ③ Team-Dispatch (KICKOFF-AGENT-PROMPTS.md). Offen: Onboarding-Hinweis „Wachstum braucht Connect“ in NOTE/M4-Spec? Owner-Entscheide: Apple-Account, Mac-Hardware, macOS-Z1-Priorität (NOTE.md).
 
 ## Recent decisions
 - **Multiplattform Windows + macOS nativ** (Teambesprechung 2026-07-21): eine Electron-Codebasis, Installer für beide OS; ADR-002-Update in M1/MILESTONE.md; Release-Pipeline (M6/P4) baut + signiert beide Plattformen; macOS-Signing = Budget-Entscheid analog #4b — 2026-07-21
