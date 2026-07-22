@@ -1,5 +1,11 @@
 # Tracking
 
+- **2026-07-22** — Vorhaben: Offene Branches schließen (Merge + Tag), Ziel „nur noch main".
+  Status: **teilweise umgesetzt — blockiert auf Owner-Review** (15 bereits gemergte
+  Upstream-Branches mit `archive/*`-Tags versehen + gelöscht, Tags v0.1.0 +
+  docs/animation-authoring zu upstream gepusht; PR #38 approved — aber Org-Ruleset
+  blockiert alle Merges ohne Owner/Admin; PRs #38–#41 warten auf Gw3i).
+
 - **2026-07-22** — Vorhaben: Umstieg Fork → Direktarbeit auf ai-beavers/beaver-buddy:
   letzten Fork-only-Commit (`1c86e57`, animation-authoring) als Branch + PR zu upstream
   bringen, PR #40 abwarten/mergen, Remotes umbenennen (upstream→origin, origin→fork),

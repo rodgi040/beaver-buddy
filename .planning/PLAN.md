@@ -9,6 +9,13 @@
 > - ⏸ **Blockiert:** Schritte 2 (Merge) bis 5 warten auf Approval von Gw3i/jurij.
 >   Nach Approval kann rodgi040 (maintain) selbst mergen: erst #40, dann #41,
 >   danach Schritte 3–6 ausführen.
+>
+> **Update 2026-07-22 (Branch-Cleanup):** 15 bereits gemergte Upstream-Branches
+> (BL-1–BL-12, BL-11-fix-*, build-loop) mit Archiv-Tags (`archive/bl-item/BL-N`)
+> am Branch-Tip versehen und gelöscht; Tags `v0.1.0` + `docs/animation-authoring`
+> zu upstream gepusht. PR #38 (Dependabot) von rodgi040 approved — Merge trotzdem
+> BLOCKED: **Org-Level-Ruleset** verlangt Owner/Admin-Approval (nicht einsehbar ohne
+> admin:org-Scope). Verbleibende offene Branches = PRs #38–#41 → warten auf **Gw3i**.
 
 > Ziel: Künftig Branches direkt auf `ai-beavers/beaver-buddy` (upstream) von `main`
 > erstellen und PRs dort öffnen — der Fork `rodgi040/beaver-buddy` wird nicht mehr
